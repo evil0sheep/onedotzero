@@ -1,0 +1,36 @@
+---
+- name: Check for port conflicts (DNS, DHCP, TFTP)
+  shell: "ss -tlpn | grep -E ':(53|67|69) '"
+  register: port_conflict_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Fail if ports are in use
+  fail:
+    msg: "One or more required ports (53, 67, 69) are in use. Please free them and rerun."
+  when: port_conflict_check.rc == 0
+
+- name: Configure dnsmasq
+  template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+    mode: '0644'
+  notify: restart dnsmasq
+
+- name: Ensure dnsmasq is running and enabled
+  service:
+    name: dnsmasq
+    state: started
+    enabled: yes
+
+- name: Add handlers to restart services
+  block:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
+  when: false # This block is only for defining handlers

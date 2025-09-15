@@ -1,0 +1,11 @@
+DEFAULT vesamenu.c32
+PROMPT 0
+TIMEOUT 100
+
+MENU TITLE PXE Boot Menu
+
+LABEL ubuntu2204_autoinstall
+  MENU LABEL Ubuntu 22.04 Autoinstall
+  KERNEL vmlinuz
+  INITRD initrd
+  APPEND root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_default_ipv4.address }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ ansible_default_ipv4.address }}/ubuntu2204/

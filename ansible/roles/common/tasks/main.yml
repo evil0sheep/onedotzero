@@ -1,0 +1,25 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  changed_when: false
+
+- name: Install required packages
+  apt:
+    name:
+      - nginx
+      - dnsmasq
+      - syslinux-common
+      - pxelinux
+      - p7zip-full
+    state: present
+
+- name: Create TFTP and HTTP directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /srv/tftp
+    - /srv/http
+    - /srv/http/ubuntu2204

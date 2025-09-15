@@ -1,0 +1,6 @@
+interface={{ compute_interface }}
+bind-interfaces
+dhcp-range=192.168.1.50,192.168.1.100,12h
+dhcp-boot=pxelinux.0
+enable-tftp
+tftp-root=/srv/tftp
