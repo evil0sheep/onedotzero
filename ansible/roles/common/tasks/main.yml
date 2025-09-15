@@ -12,13 +12,14 @@
       - syslinux-common
       - pxelinux
       - p7zip-full
+      - grub-efi-amd64-bin
     state: present
 
 - name: Create TFTP and HTTP directories
   file:
     path: "{{ item }}"
     state: directory
-    mode: '0755'
+    mode: "0755"
   loop:
     - /srv/tftp
     - /srv/http

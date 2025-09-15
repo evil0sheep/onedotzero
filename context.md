@@ -14,6 +14,31 @@ We will be developing ansible playbooks to configure the cluster described here 
 # Workflow Description
 We will be working on my macbook editing files locally and then rsyncing them to the NUC and executing them remotely over SSH using the `remote.py` script we will develop in step 0 of the todo list.
 
+# PXE Booting and Development Workflow
+
+To ensure a fast and efficient development cycle, we will adopt a two-phase approach for configuring the compute nodes. This allows for rapid iteration while developing Ansible playbooks, followed by the creation of a stable, fast-booting production environment.
+
+## Phase 1: Live Development & Testing
+
+The primary goal of this phase is to create and validate our Ansible playbooks. To achieve a fast feedback loop, we will PXE boot the compute nodes into a **live Ubuntu environment**.
+
+- **Process:** The node boots the standard Ubuntu Server ISO directly into a usable OS that runs entirely in RAM. No changes are made to the node's internal SSD.
+- **Workflow:** We can SSH into this live environment to repeatedly run and debug our Ansible playbooks. A simple reboot wipes all changes, providing a perfectly clean slate for testing the entire configuration process from scratch. This avoids the slow process of running a full OS installation for every minor change.
+- **Default Mode:** This "Live Boot" will be the default PXE boot option to facilitate easy development.
+
+## Phase 2: Golden Image Creation (Production)
+
+Once the Ansible playbooks are mature and reliable, we will create a "golden image" for production use. This provides fast, consistent, and centrally managed boots for the entire cluster.
+
+- **Process:**
+    1.  **Build:** On the control node, we will create a base Ubuntu 22.04 filesystem in a directory using a tool like `debootstrap`.
+    2.  **Configure:** We will use `chroot` to enter this directory and run our validated Ansible playbooks inside it. This configures the image with all necessary drivers, libraries, and software without needing a VM or a live boot.
+    3.  **Serve:** This configured directory (the "golden image") is then served over the network using NFS.
+- **Booting:** The compute nodes will PXE boot a kernel and initrd, which will then mount the NFS share as their root filesystem. The entire OS will run over the network from the golden image.
+- **Storage:** The internal SSDs on the compute nodes will be mounted separately (e.g., at `/models`) for persistent storage of large files like model weights, keeping the OS itself stateless.
+
+This two-phase strategy allows us to combine rapid, iterative development with a robust, scalable, and easily maintainable production cluster environment.
+
 # TODO
 ✅ 0. Create an exaecutably python script `remote.py` in the CWD which takes command string as an argument, rsyncs the current working directory (~/workspace/onedotzero) to `control:~/remote/onedotzero`, connects to `control`, cd's to `~/remote/onedotzero`, and executes the command string in a shell. So, for example, `remote.py ls` and `ls` should always show the same directory state. `remote` is an ssh Host defined in `~/.ssh/config` currently pointing at `nuc` but lets use this abstraction always.
 1. Create an ansible playbook which takes an interface name (like `enx8cae4cf44e21`) in  a vars file (call it `compute_interface`) and configures the host to PXE boot compute nodes over that interface. This will run on `nuc` (the Ansible control node) in this setup. We want this script to do everything needed to allow a compute node configured for PXE boot booted to ubuntu 22.04 with an open SSH port so that we can configure it with ansible.  You can assume the control node is also running ubuntu. This script should do the following tasks:

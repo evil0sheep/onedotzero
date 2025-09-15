@@ -1,5 +1,6 @@
 ---
-- hosts: control
+- hosts: localhost
+  connection: local
   become: yes
   vars_files:
     - vars/main.yml
@@ -30,3 +31,14 @@
     - pxe_boot
     - nginx
     - dnsmasq
+
+  post_tasks:
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted

@@ -1,11 +1,17 @@
-DEFAULT vesamenu.c32
+DEFAULT ubuntu2204_live
 PROMPT 0
 TIMEOUT 100
 
 MENU TITLE PXE Boot Menu
 
+LABEL ubuntu2204_live
+  MENU LABEL Ubuntu 22.04 Live Boot (Development)
+  KERNEL boot/grub/vmlinuz
+  INITRD boot/grub/initrd
+  APPEND ip=dhcp boot=casper netboot=url url=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso quiet splash cloud-init=disabled
+
 LABEL ubuntu2204_autoinstall
-  MENU LABEL Ubuntu 22.04 Autoinstall
-  KERNEL vmlinuz
-  INITRD initrd
-  APPEND root=/dev/ram0 ramdisk_size=1500000 ip=dhcp url=http://{{ ansible_default_ipv4.address }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ ansible_default_ipv4.address }}/ubuntu2204/
+  MENU LABEL Ubuntu 22.04 Autoinstall (Production)
+  KERNEL boot/grub/vmlinuz
+  INITRD boot/grub/initrd
+  APPEND ip=dhcp url=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/

@@ -1,4 +1,9 @@
 ---
+- name: Ensure /mnt/ubuntu_iso is unmounted
+  mount:
+    path: /mnt/ubuntu_iso
+    state: unmounted
+
 - name: Check for Ubuntu ISO
   stat:
     path: /srv/ubuntu-22.04.4-live-server-amd64.iso
@@ -25,71 +30,68 @@
     opts: ro,loop
     state: mounted
 
-- name: Copy Ubuntu installer files to HTTP directory
-  command: rsync -av /mnt/ubuntu_iso/ /srv/http/ubuntu2204/
-  args:
-    creates: /srv/http/ubuntu2204/casper
-
-- name: Copy bootloader files to TFTP directory
+- name: Copy ISO contents to HTTP directory
   copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
+    src: /mnt/ubuntu_iso/
+    dest: /srv/http/ubuntu2204/
     remote_src: yes
-    mode: "0644"
-  loop:
-    - { src: "/usr/lib/PXELINUX/pxelinux.0", dest: "/srv/tftp/pxelinux.0" }
-    - {
-        src: "/usr/lib/syslinux/modules/bios/ldlinux.c32",
-        dest: "/srv/tftp/ldlinux.c32",
-      }
-    - {
-        src: "/usr/lib/syslinux/modules/bios/libutil.c32",
-        dest: "/srv/tftp/libutil.c32",
-      }
-    - {
-        src: "/usr/lib/syslinux/modules/bios/menu.c32",
-        dest: "/srv/tftp/menu.c32",
-      }
-    - {
-        src: "/usr/lib/syslinux/modules/bios/vesamenu.c32",
-        dest: "/srv/tftp/vesamenu.c32",
-      }
-    - { src: "/srv/http/ubuntu2204/casper/vmlinuz", dest: "/srv/tftp/vmlinuz" }
-    - { src: "/srv/http/ubuntu2204/casper/initrd", dest: "/srv/tftp/initrd" }
+  become: yes
 
-- name: Create pxelinux.cfg directory
+- name: Clean existing TFTP directory
   file:
-    path: /srv/tftp/pxelinux.cfg
+    path: /srv/tftp
+    state: absent
+
+- name: Recreate TFTP directory
+  file:
+    path: /srv/tftp
     state: directory
     mode: "0755"
 
-- name: Find public SSH keys
-  find:
-    paths: "~/.ssh/"
-    patterns: "*.pub"
-  register: ssh_keys
-  delegate_to: localhost
+- name: Create GRUB network boot environment
+  command: grub-mknetdir --net-directory=/srv/tftp --subdir=boot/grub
+  args:
+    creates: /srv/tftp/boot/grub/x86_64-efi/core.efi
 
-- name: Fail if no SSH key is found
+- name: Copy legacy bootloader and menu files
+  copy:
+    src: "{{ item }}"
+    dest: "/srv/tftp/"
+    remote_src: yes
+    mode: "0644"
+  loop:
+    - /usr/lib/PXELINUX/pxelinux.0
+    - /usr/lib/syslinux/modules/bios/ldlinux.c32
+    - /usr/lib/syslinux/modules/bios/libutil.c32
+    - /usr/lib/syslinux/modules/bios/vesamenu.c32
+
+- name: Copy kernel and initrd to TFTP root
+  copy:
+    src: "{{ item }}"
+    dest: "/srv/tftp/boot/grub/"
+    remote_src: yes
+    mode: "0644"
+  loop:
+    - /srv/http/ubuntu2204/casper/vmlinuz
+    - /srv/http/ubuntu2204/casper/initrd
+
+- name: Check for SSH public key on control node
+  stat:
+    path: "~/.ssh/id_ed25519.pub"
+  register: ssh_key_file
+  become: no
+
+- name: Fail if SSH key is not found on control node
   fail:
-    msg: "No SSH public key found in ~/.ssh/. Please create one."
-  when: ssh_keys.matched == 0
+    msg: "SSH public key not found at ~/.ssh/id_ed25519.pub on the control node. Please create one."
+  when: not ssh_key_file.stat.exists
+  become: no
 
-- name: Ask user to select SSH key if multiple are found
-  pause:
-    prompt: "Multiple SSH public keys found. Please specify which one to use:\n{{ ssh_keys.files | map(attribute='path') | list | join('\\n') }}"
-  register: selected_ssh_key
-  when: ssh_keys.matched > 1
-
-- name: Set SSH key path
-  set_fact:
-    ssh_key_path: "{{ ssh_keys.files[0].path if ssh_keys.matched == 1 else selected_ssh_key.user_input }}"
-
-- name: Read SSH public key
+- name: Read SSH public key from control node
   slurp:
-    src: "{{ ssh_key_path }}"
+    src: "~/.ssh/id_ed25519.pub"
   register: ssh_key_content
-  delegate_to: localhost
+  become: no
 
 - name: Set ssh_key fact
   set_fact:
@@ -107,7 +109,19 @@
     dest: /srv/http/ubuntu2204/meta-data
     mode: "0644"
 
-- name: Create PXE boot menu
+- name: Create GRUB boot menu
+  template:
+    src: grub.cfg.j2
+    dest: /srv/tftp/boot/grub/grub.cfg
+    mode: "0644"
+
+- name: Create directory for legacy PXE boot menu
+  file:
+    path: /srv/tftp/pxelinux.cfg
+    state: directory
+    mode: "0755"
+
+- name: Create PXE boot menu for legacy BIOS
   template:
     src: pxe.cfg.j2
     dest: /srv/tftp/pxelinux.cfg/default

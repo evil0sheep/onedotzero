@@ -1,20 +1,41 @@
 ---
-- name: Check for port conflicts (DNS, DHCP, TFTP)
-  shell: "ss -tlpn | grep -E ':(53|67|69) '"
+- name: Ensure dnsmasq is stopped before configuration
+  service:
+    name: dnsmasq
+    state: stopped
+
+- name: Check for port conflicts by non-dnsmasq processes
+  shell: "ss -tlpn | grep -E ':(53|67|69) ' | grep -v dnsmasq"
   register: port_conflict_check
-  ignore_errors: true
+  failed_when: false
   changed_when: false
 
-- name: Fail if ports are in use
+- name: Fail if ports are in use by non-dnsmasq processes
   fail:
-    msg: "One or more required ports (53, 67, 69) are in use. Please free them and rerun."
-  when: port_conflict_check.rc == 0
+    msg: "One or more required ports (53, 67, 69) are in use by other processes. Please free them and rerun."
+  when: port_conflict_check.stdout != ""
 
 - name: Configure dnsmasq
   template:
     src: dnsmasq.conf.j2
     dest: /etc/dnsmasq.conf
-    mode: '0644'
+    mode: "0644"
+  notify: restart dnsmasq
+
+- name: Create systemd override directory for dnsmasq
+  file:
+    path: /etc/systemd/system/dnsmasq.service.d
+    state: directory
+    mode: "0755"
+
+- name: Add systemd override for dnsmasq
+  copy:
+    content: |
+      [Unit]
+      After=network-online.target
+      Wants=network-online.target
+    dest: /etc/systemd/system/dnsmasq.service.d/override.conf
+    mode: "0644"
   notify: restart dnsmasq
 
 - name: Ensure dnsmasq is running and enabled
@@ -22,15 +43,3 @@
     name: dnsmasq
     state: started
     enabled: yes
-
-- name: Add handlers to restart services
-  block:
-    - name: restart nginx
-      service:
-        name: nginx
-        state: restarted
-    - name: restart dnsmasq
-      service:
-        name: dnsmasq
-        state: restarted
-  when: false # This block is only for defining handlers

@@ -1,20 +1,20 @@
 ---
-- name: Check if port 80 is in use on compute_interface
-  shell: "ss -tlpn | grep $(ip -f inet addr show {{ compute_interface }} | awk '/inet / {print $2}' | cut -d/ -f1):80"
+- name: Check if port 80 is in use by a non-nginx process
+  shell: "ss -tlpn | grep $(ip -f inet addr show {{ compute_interface }} | awk '/inet / {print $2}' | cut -d/ -f1):80 | grep -v nginx"
   register: port_80_check
-  ignore_errors: true
+  failed_when: false
   changed_when: false
 
-- name: Fail if port 80 is in use
+- name: Fail if port 80 is in use by a non-nginx process
   fail:
-    msg: "Port 80 is already in use on interface {{ compute_interface }}. Please free the port and rerun."
-  when: port_80_check.rc == 0
+    msg: "Port 80 is already in use by a non-nginx process on interface {{ compute_interface }}. Please free the port and rerun."
+  when: port_80_check.stdout != ""
 
 - name: Configure nginx for PXE boot server
   template:
     src: nginx.conf.j2
     dest: /etc/nginx/sites-available/pxe_server
-    mode: '0644'
+    mode: "0644"
 
 - name: Enable nginx configuration
   file:
