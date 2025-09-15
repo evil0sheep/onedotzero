@@ -11,8 +11,11 @@ The plan is for the compute nodes to PXE boot a shared linux image off of the NU
 
 We will be developing ansible playbooks to configure the cluster described here but we will then use the same scripts to configure a 4 node fully connected cluster of Ryzen 395 AI max boards with a different control node so we want to keep the scripts hardware agnostic where possible (or for things that arent hardware agnostic like setting up GPU drivers we just want to keep them isolated)
 
-# TODO
+# Workflow Description
+We will be working on my macbook editing files locally and then rsyncing them to the NUC and executing them remotely over SSH using the `remote.py` script we will develop in step 0 of the todo list.
 
+# TODO
+0. Create an exaecutably python script `remote.py` in the CWD which takes command string as an argument, rsyncs the current working directory (~/workspace/onedotzero) to `control:~/remote/onedotzero`, connects to `control`, cd's to `~/remote/onedotzero`, and executes the command string in a shell. So, for example, `remote.py ls` and `ls` should always show the same directory state. `remote` is an ssh Host defined in `~/.ssh/config` currently pointing at `nuc` but lets use this abstraction always.
 1. Create an ansible playbook which takes an interface name (like `enx8cae4cf44e21`) in  a vars file (call it `compute_interface`) and configures the host to PXE boot compute nodes over that interface. This will run on `nuc` (the Ansible control node) in this setup. We want this script to do everything needed to allow a compute node configured for PXE boot booted to ubuntu 22.04 with an open SSH port so that we can configure it with ansible.  You can assume the control node is also running ubuntu. This script should do the following tasks:
   * Install any necessary tools (e.g. dnsmasq nginx syslinux-common pxelinux etc)
   * Create TFTP and HTTP directories to serve an ubuntu image
