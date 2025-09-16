@@ -65,15 +65,43 @@
     - /usr/lib/syslinux/modules/bios/libutil.c32
     - /usr/lib/syslinux/modules/bios/vesamenu.c32
 
-- name: Copy kernel and initrd to TFTP root
+- name: Find the kernel image in the NFS root
+  find:
+    paths: /srv/nfs/ubuntu2204/boot
+    patterns: "vmlinuz-*"
+  register: kernel_find
+
+- name: Find the initrd image in the NFS root
+  find:
+    paths: /srv/nfs/ubuntu2204/boot
+    patterns: "initrd.img-*"
+  register: initrd_find
+
+- name: Fail if kernel is not found
+  fail:
+    msg: "Could not find a kernel image in /srv/nfs/ubuntu2204/boot"
+  when: kernel_find.matched == 0
+
+- name: Fail if initrd is not found
+  fail:
+    msg: "Could not find an initrd image in /srv/nfs/ubuntu2204/boot"
+  when: initrd_find.matched == 0
+
+- name: Copy kernel and initrd from NFS root to TFTP directory
   copy:
-    src: "{{ item }}"
-    dest: "/srv/tftp/boot/grub/"
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
     remote_src: yes
     mode: "0644"
   loop:
-    - /srv/http/ubuntu2204/casper/vmlinuz
-    - /srv/http/ubuntu2204/casper/initrd
+    - {
+        src: "{{ kernel_find.files[0].path }}",
+        dest: "/srv/tftp/boot/grub/vmlinuz",
+      }
+    - {
+        src: "{{ initrd_find.files[0].path }}",
+        dest: "/srv/tftp/boot/grub/initrd",
+      }
 
 - name: Check for SSH public key on control node
   stat:

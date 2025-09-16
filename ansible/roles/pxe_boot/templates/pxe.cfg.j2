@@ -1,17 +1,23 @@
-DEFAULT ubuntu2204_live
+DEFAULT ubuntu2204_nfs
 PROMPT 0
 TIMEOUT 100
 
 MENU TITLE PXE Boot Menu
 
+LABEL ubuntu2204_nfs
+  MENU LABEL Ubuntu 22.04 NFS Boot (Development)
+  KERNEL boot/grub/vmlinuz
+  INITRD boot/grub/initrd
+  APPEND root=/dev/nfs nfsroot={{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}:/srv/nfs/ubuntu2204 ip=dhcp ro quiet splash
+
 LABEL ubuntu2204_live
-  MENU LABEL Ubuntu 22.04 Live Boot (Development)
+  MENU LABEL Ubuntu 22.04 Live ISO Boot
   KERNEL boot/grub/vmlinuz
   INITRD boot/grub/initrd
   APPEND ip=dhcp boot=casper netboot=url url=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso quiet splash cloud-init=disabled
 
 LABEL ubuntu2204_autoinstall
-  MENU LABEL Ubuntu 22.04 Autoinstall (Production)
+  MENU LABEL Ubuntu 22.04 Autoinstall
   KERNEL boot/grub/vmlinuz
   INITRD boot/grub/initrd
   APPEND ip=dhcp url=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso autoinstall ds=nocloud-net;s=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/

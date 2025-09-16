@@ -1,0 +1,88 @@
+---
+- name: Install NFS and debootstrap dependencies
+  apt:
+    name:
+      - nfs-kernel-server
+      - debootstrap
+    state: present
+    update_cache: yes
+
+- name: Create NFS root directory
+  file:
+    path: /srv/nfs/ubuntu2204
+    state: directory
+    mode: "0755"
+
+- name: Check if debootstrap has already run
+  stat:
+    path: /srv/nfs/ubuntu2204/etc/os-release
+  register: debootstrap_check
+
+- name: Run debootstrap to create Ubuntu 22.04 filesystem
+  command: debootstrap --arch=amd64 jammy /srv/nfs/ubuntu2204
+  when: not debootstrap_check.stat.exists
+
+- name: Copy host's resolv.conf for network access in chroot
+  copy:
+    src: /etc/resolv.conf
+    dest: /srv/nfs/ubuntu2204/etc/resolv.conf
+    remote_src: yes
+
+- name: Mount pseudo-filesystems for chroot
+  mount:
+    path: "/srv/nfs/ubuntu2204/{{ item }}"
+    src: "/{{ item }}"
+    fstype: none
+    opts: bind
+    state: mounted
+  loop:
+    - proc
+    - sys
+    - dev
+
+- name: Chroot and configure the base system
+  command: "chroot /srv/nfs/ubuntu2204 {{ item }}"
+  loop:
+    - "apt-get update"
+    - "apt-get install -y linux-image-generic openssh-server nfs-common"
+    - "mkdir -p /root/.ssh"
+    - "chmod 700 /root/.ssh"
+- name: Add SSH key to chroot
+  copy:
+    content: "{{ ssh_public_key }}"
+    dest: /srv/nfs/ubuntu2204/root/.ssh/authorized_keys
+    mode: "0600"
+
+- name: Set hostname in chroot
+  copy:
+    content: "compute-node"
+    dest: /srv/nfs/ubuntu2204/etc/hostname
+    mode: "0644"
+
+- name: Create fstab in chroot
+  copy:
+    dest: /srv/nfs/ubuntu2204/etc/fstab
+    content: |
+      proc /proc proc defaults 0 0
+      sysfs /sys sysfs defaults 0 0
+
+- name: Unmount pseudo-filesystems
+  mount:
+    path: "/srv/nfs/ubuntu2204/{{ item }}"
+    state: unmounted
+  loop:
+    - proc
+    - sys
+    - dev
+
+- name: Configure NFS exports
+  template:
+    src: exports.j2
+    dest: /etc/exports
+  notify: restart nfs-kernel-server
+
+- name: Ensure nfs-kernel-server is started and enabled
+  service:
+    name: nfs-kernel-server
+    state: started
+    enabled: yes
