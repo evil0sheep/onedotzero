@@ -6,8 +6,7 @@ dhcp-range={{ compute_interface }},192.168.1.50,192.168.1.100,12h
 dhcp-match=set:efi-x86_64,option:client-arch,7
 dhcp-boot=tag:efi-x86_64,boot/grub/x86_64-efi/core.efi
 
-# Set the boot file for legacy BIOS clients
-dhcp-boot=pxelinux.0
+
 
 enable-tftp
 tftp-root=/srv/tftp

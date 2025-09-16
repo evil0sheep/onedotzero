@@ -53,18 +53,6 @@
   args:
     creates: /srv/tftp/boot/grub/x86_64-efi/core.efi
 
-- name: Copy legacy bootloader and menu files
-  copy:
-    src: "{{ item }}"
-    dest: "/srv/tftp/"
-    remote_src: yes
-    mode: "0644"
-  loop:
-    - /usr/lib/PXELINUX/pxelinux.0
-    - /usr/lib/syslinux/modules/bios/ldlinux.c32
-    - /usr/lib/syslinux/modules/bios/libutil.c32
-    - /usr/lib/syslinux/modules/bios/vesamenu.c32
-
 - name: Find the kernel image in the NFS root
   find:
     paths: /srv/nfs/ubuntu2204/boot
@@ -141,16 +129,4 @@
   template:
     src: grub.cfg.j2
     dest: /srv/tftp/boot/grub/grub.cfg
-    mode: "0644"
-
-- name: Create directory for legacy PXE boot menu
-  file:
-    path: /srv/tftp/pxelinux.cfg
-    state: directory
-    mode: "0755"
-
-- name: Create PXE boot menu for legacy BIOS
-  template:
-    src: pxe.cfg.j2
-    dest: /srv/tftp/pxelinux.cfg/default
     mode: "0644"
