@@ -44,7 +44,7 @@
   command: "chroot /srv/nfs/ubuntu2204 {{ item }}"
   loop:
     - "apt-get update"
-    - "apt-get install -y linux-image-generic openssh-server nfs-common"
+    - "apt-get install -y linux-image-generic openssh-server nfs-common overlayroot"
     - "mkdir -p /root/.ssh"
     - "chmod 700 /root/.ssh"
 - name: Add SSH key to chroot
@@ -58,6 +58,17 @@
     content: "compute-node"
     dest: /srv/nfs/ubuntu2204/etc/hostname
     mode: "0644"
+
+- name: Configure overlayroot
+  copy:
+    content: |
+      overlayroot="tmpfs:swap=1,recurse=0"
+    dest: /srv/nfs/ubuntu2204/etc/overlayroot.conf
+    mode: "0644"
+
+- name: Update the initramfs in the chroot
+  command: "chroot /srv/nfs/ubuntu2204 update-initramfs -u"
+  changed_when: false
 
 - name: Create fstab in chroot
   copy:
