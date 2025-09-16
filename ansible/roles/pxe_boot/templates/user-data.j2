@@ -10,5 +10,9 @@ autoinstall:
     allow-pw: false
     authorized-keys:
       - {{ ssh_authorized_key }}
+  user-data:
+    users:
+      - name: admin
+        sudo: ALL=(ALL) NOPASSWD:ALL
   late-commands:
     - echo "Done with autoinstall" > /target/var/log/autoinstall.log

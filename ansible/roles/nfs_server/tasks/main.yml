@@ -79,7 +79,10 @@
   template:
     src: exports.j2
     dest: /etc/exports
-  notify: restart nfs-kernel-server
+
+- name: Re-export NFS shares
+  command: exportfs -ra
+  changed_when: false
 
 - name: Ensure nfs-kernel-server is started and enabled
   service:

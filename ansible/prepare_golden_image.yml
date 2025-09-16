@@ -1,0 +1,66 @@
+- hosts: localhost
+  connection: local
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Mount pseudo-filesystems for chroot
+      mount:
+        path: "/srv/nfs/ubuntu2204/{{ item }}"
+        src: "/{{ item }}"
+        fstype: none
+        opts: bind
+        state: mounted
+      loop:
+        - proc
+        - sys
+        - dev
+
+    - name: Copy ansible playbook into chroot
+      copy:
+        src: configure_wol.yml
+        dest: /srv/nfs/ubuntu2204/tmp/configure_wol.yml
+
+    - name: Copy ansible roles into chroot
+      copy:
+        src: roles/wol
+        dest: /srv/nfs/ubuntu2204/tmp/roles/
+
+    - name: Copy ansible.cfg into chroot
+      copy:
+        src: ../ansible.cfg
+        dest: /srv/nfs/ubuntu2204/tmp/ansible.cfg
+
+    - name: Add universe repository in chroot
+      command: >
+        chroot /srv/nfs/ubuntu2204
+        bash -c "apt-get update && apt-get install -y software-properties-common && add-apt-repository universe"
+
+    - name: Install Ansible in chroot
+      command: >
+        chroot /srv/nfs/ubuntu2204
+        bash -c "apt-get update && apt-get install -y ansible"
+
+    - name: Chroot and run ansible playbook
+      command: >
+        chroot /srv/nfs/ubuntu2204
+        ansible-playbook /tmp/configure_wol.yml
+        --connection=local
+        -i localhost,
+
+    - name: Clean up ansible files in chroot
+      file:
+        path: /srv/nfs/ubuntu2204/tmp/{{ item }}
+        state: absent
+      loop:
+        - configure_wol.yml
+        - roles
+        - ansible.cfg
+
+    - name: Unmount pseudo-filesystems
+      mount:
+        path: "/srv/nfs/ubuntu2204/{{ item }}"
+        state: unmounted
+      loop:
+        - proc
+        - sys
+        - dev

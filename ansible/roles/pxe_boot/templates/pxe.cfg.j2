@@ -8,13 +8,13 @@ LABEL ubuntu2204_nfs
   MENU LABEL Ubuntu 22.04 NFS Boot (Development)
   KERNEL boot/grub/vmlinuz
   INITRD boot/grub/initrd
-  APPEND root=/dev/nfs nfsroot={{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}:/srv/nfs/ubuntu2204 ip=dhcp ro quiet splash
+  APPEND root=/dev/nfs nfsroot={{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}:/srv/nfs/ubuntu2204 ip=dhcp rw quiet splash
 
 LABEL ubuntu2204_live
   MENU LABEL Ubuntu 22.04 Live ISO Boot
   KERNEL boot/grub/vmlinuz
   INITRD boot/grub/initrd
-  APPEND ip=dhcp boot=casper netboot=url url=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso quiet splash cloud-init=disabled
+  APPEND ip=dhcp boot=casper toram netboot=url url=http://{{ hostvars['localhost']['ansible_' + compute_interface]['ipv4']['address'] }}/ubuntu2204/ubuntu-22.04.4-live-server-amd64.iso quiet splash cloud-init=disabled
 
 LABEL ubuntu2204_autoinstall
   MENU LABEL Ubuntu 22.04 Autoinstall
