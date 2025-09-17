@@ -1,0 +1,12 @@
+- hosts: localhost
+  connection: local
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: Get interface facts
+      setup:
+        filter: "ansible_facts['{{ compute_interface }}']"
+
+    - name: Print broadcast address
+      debug:
+        msg: "{{ ansible_facts[compute_interface]['ipv4']['broadcast'] }}"

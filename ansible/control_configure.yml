@@ -44,6 +44,22 @@
     - dnsmasq
 
   post_tasks:
+    - name: Ensure remote directory exists
+      file:
+        path: "{{ ansible_user_dir }}/remote/onedotzero"
+        state: directory
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: "0755"
+
+    - name: Touch timestamp file for control node
+      file:
+        path: "{{ ansible_user_dir }}/remote/onedotzero/.last_configured_control"
+        state: touch
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: "0644"
+
     - name: Restart nginx
       service:
         name: nginx

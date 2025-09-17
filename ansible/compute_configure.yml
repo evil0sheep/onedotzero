@@ -1,0 +1,12 @@
+- hosts: compute
+  connection: ssh
+  become: yes
+  gather_facts: yes
+  roles:
+    - networkd_wol
+
+  post_tasks:
+    - name: Touch timestamp file for compute node
+      file:
+        path: /etc/last_configured_compute
+        state: touch

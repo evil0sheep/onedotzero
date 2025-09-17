@@ -1,6 +1,0 @@
-- hosts: compute
-  connection: ssh
-  become: yes
-  gather_facts: yes
-  roles:
-    - networkd_wol
