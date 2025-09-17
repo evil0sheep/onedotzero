@@ -1,6 +1,6 @@
-- hosts: localhost
-  connection: local
+- hosts: compute
+  connection: ssh
   become: yes
   gather_facts: yes
   roles:
-    - wol
+    - networkd_wol

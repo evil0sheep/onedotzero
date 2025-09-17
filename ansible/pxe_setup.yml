@@ -37,6 +37,7 @@
         ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
   roles:
     - common
+    - gateway
     - nfs_server
     - pxe_boot
     - nginx

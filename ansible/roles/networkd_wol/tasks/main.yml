@@ -1,0 +1,9 @@
+- name: Enable Wake-on-LAN for all ethernet interfaces
+  copy:
+    dest: /etc/systemd/network/99-wol.link
+    content: |
+      [Match]
+      Name=en*
+
+      [Link]
+      WakeOnLan=magic

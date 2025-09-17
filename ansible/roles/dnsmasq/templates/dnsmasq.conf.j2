@@ -1,6 +1,8 @@
 interface={{ compute_interface }}
 bind-interfaces
 dhcp-range={{ compute_interface }},192.168.1.50,192.168.1.100,12h
+dhcp-option=option:dns-server,8.8.8.8
+
 
 # Set the boot file for UEFI clients
 dhcp-match=set:efi-x86_64,option:client-arch,7

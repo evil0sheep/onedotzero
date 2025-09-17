@@ -1,0 +1,26 @@
+- name: Install iptables-persistent
+  apt:
+    name: iptables-persistent
+    state: present
+
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Get default gateway interface
+  shell: ip route | grep default | awk '{print $5}'
+  register: default_gateway_interface
+
+- name: Configure iptables for NAT
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    out_interface: "{{ default_gateway_interface.stdout }}"
+    jump: MASQUERADE
+
+- name: Save iptables rules
+  shell: iptables-save > /etc/iptables/rules.v4
