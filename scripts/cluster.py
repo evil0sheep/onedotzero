@@ -138,7 +138,7 @@ def compute_down(args):
     try:
         run_command(command, remote=args.remote)
     except subprocess.CalledProcessError as e:
-        logging.warning(f"SSH connection failed during shutdown, which is expected: {e}")
+        logging.info(f"SSH connection failed during shutdown, which is expected: {e}")
 
 
 def compute_restart(args):
@@ -148,7 +148,7 @@ def compute_restart(args):
     try:
         run_command(command, remote=args.remote)
     except subprocess.CalledProcessError as e:
-        logging.warning(f"SSH connection failed during reboot, which is expected: {e}")
+        logging.info(f"SSH connection failed during reboot, which is expected: {e}")
 
 def compute_wait(args):
     logging.info("Waiting for all compute nodes to become reachable...")
@@ -258,11 +258,14 @@ def hardware_get(args):
 # --- Main Execution ---
 
 def main():
-    parser = argparse.ArgumentParser(description="Cluster management script.")
+    parser = argparse.ArgumentParser(
+        description="Cluster management script.\n\nFor help on a specific command, use: cluster <command> --help",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument('--remote', action=argparse.BooleanOptionalAction, default=True,
                         help="Execute commands on the remote host (default: True).")
 
-    subparsers = parser.add_subparsers(dest='command', required=True)
+    subparsers = parser.add_subparsers(dest='command')
 
     # Top-level commands
     subparsers.add_parser('status', help='Get a quick status of the cluster.').set_defaults(func=cluster_status)
@@ -293,6 +296,10 @@ def main():
 
 
     args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(0)
 
     # Load hardware config for all commands except 'hardware'
     if args.command != 'hardware':
