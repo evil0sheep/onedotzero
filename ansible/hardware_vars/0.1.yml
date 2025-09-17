@@ -1,0 +1,9 @@
+---
+# Hardware v0.1 Configuration (A770)
+control_host: "control_0_1"
+compute_interface: "enx8cae4cf44e21"
+arch: "amd64"
+debootstrap_arch: "amd64"
+
+compute_nodes:
+  - { mac: "d8:bb:c1:9b:84:8b", ip: "192.168.1.101", name: "compute1" }

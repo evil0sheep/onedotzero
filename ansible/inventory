@@ -1,6 +1,0 @@
-[control]
-localhost ansible_connection=local
-
-[compute]
-node0
-node1

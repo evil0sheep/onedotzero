@@ -15,10 +15,10 @@
     msg: "One or more required ports (53, 67, 69) are in use by other processes. Please free them and rerun."
   when: port_conflict_check.stdout != ""
 
-- name: Configure dnsmasq
+- name: Configure dnsmasq for onedotzero
   template:
     src: dnsmasq.conf.j2
-    dest: /etc/dnsmasq.conf
+    dest: /etc/dnsmasq.d/10-onedotzero.conf
     mode: "0644"
   notify: restart dnsmasq
 
