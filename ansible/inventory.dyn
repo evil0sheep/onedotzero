@@ -1,5 +1,0 @@
-[compute]
-192.168.1.62
-
-[compute:vars]
-ansible_user=root
