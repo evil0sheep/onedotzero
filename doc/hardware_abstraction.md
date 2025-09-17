@@ -83,7 +83,7 @@ ansible/
 
 ## Step 3: Create Hardware-Specific Variable Files
 
-All variables that differ between hardware versions will be defined in YAML files within the `ansible/hardware_vars/` directory.
+All variables that differ between hardware versions will be defined in YAML files within the `ansible/hardware_vars/` directory. This includes a persistent list of all compute nodes, with their MAC addresses and desired static IPs.
 
 #### `ansible/hardware_vars/0.1.yml` (Example for A770 cluster):
 ```yaml
@@ -93,7 +93,10 @@ control_host: "control_0_1"
 compute_interface: "enx8cae4cf44e21"
 arch: "amd64"
 debootstrap_arch: "amd64"
-compute_node_count: 2
+
+compute_nodes:
+  - { mac: "11:22:33:44:55:66", ip: "192.168.1.100", name: "node0" }
+  - { mac: "AA:BB:CC:DD:EE:FF", ip: "192.168.1.101", name: "node1" }
 
 # Role to run for GPU driver setup on compute nodes
 gpu_driver_role: "hardware_specific/intel_arc_drivers"
@@ -107,7 +110,12 @@ control_host: "control_0_2"
 compute_interface: "eno1"
 arch: "amd64"
 debootstrap_arch: "amd64"
-compute_node_count: 4
+
+compute_nodes:
+  - { mac: "...", ip: "10.0.1.100", name: "node0" }
+  - { mac: "...", ip: "10.0.1.101", name: "node1" }
+  - { mac: "...", ip: "10.0.1.102", name: "node2" }
+  - { mac: "...", ip: "10.0.1.103", name: "node3" }
 
 # A different role for a different GPU/NPU
 gpu_driver_role: "hardware_specific/ryzen_ai_drivers"
@@ -136,7 +144,17 @@ The dynamic inventory for compute nodes (`inventory.dyn`) will continue to be ge
 
 ## Step 5: Modify Playbooks and `cluster.py` for Dynamic Logic
 
-The playbooks and orchestration script will be updated to use the new variables.
+The playbooks and orchestration script will be updated to use the new static node definitions.
+
+#### `ansible/roles/dnsmasq/templates/dnsmasq.conf.j2`:
+The `dnsmasq` configuration will be updated to iterate over the `compute_nodes` list and generate static `dhcp-host` entries. This ensures each node always receives the same IP address, making the system robust and predictable.
+
+```jinja
+# Static DHCP assignments for compute nodes
+{% for node in compute_nodes %}
+dhcp-host={{ node.mac }},{{ node.ip }},{{ node.name }}
+{% endfor %}
+```
 
 #### `ansible/control_configure.yml`:
 The `vars_files` directive will be used to load the appropriate hardware configuration file.
@@ -176,6 +194,9 @@ The `include_role` module will be used to dynamically execute the correct hardwa
 ```
 
 #### `scripts/cluster.py` Logic Updates:
--   **Node Count Mismatch Warning:** When generating the dynamic inventory, the script will compare the number of discovered nodes (from DHCP leases) with the `compute_node_count` variable. If they do not match, it will **log a warning** but will not exit.
--   **`cluster compute wait`:** This command will be updated to poll for node reachability until the number of "up" nodes equals the `compute_node_count` from the hardware vars file.
--   **`cluster status`:** This command will be updated to show the expected number of compute nodes versus how many are currently found in the lease file.
+The script will be updated to use the hardware vars file as the source of truth, removing its dependency on the DHCP lease file.
+
+-   **`generate_inventory`:** This function will now read the `compute_nodes` list from the hardware vars file and use the defined static IPs to generate the `ansible/inventory.dyn` file.
+-   **`compute_up`:** This function will read the `compute_nodes` list and use the defined MAC addresses to send Wake-on-LAN packets. This works even if the nodes are fully offline and have no active lease.
+-   **`cluster compute wait`:** This command will be updated to poll the static IPs until the number of reachable nodes equals the total number of nodes defined in the hardware vars file.
+-   **`cluster status`:** This command will be updated to show the expected nodes and their static IPs, and then ping each one to show its live status.

@@ -11,9 +11,10 @@ logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(
 # --- Configuration ---
 REMOTE_HOST = "control"
 REMOTE_DIR = "~/remote/onedotzero"
-CWD = os.path.dirname(os.path.realpath(__file__))
-ANSIBLE_DIR = os.path.join(CWD, "ansible")
-DYN_INVENTORY_PATH = "ansible/inventory.dyn"
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
+ANSIBLE_DIR = os.path.join(PROJECT_ROOT, "ansible")
+DYN_INVENTORY_PATH = os.path.join(PROJECT_ROOT, "ansible/inventory.dyn")
 LEASE_FILE_PATH = "/var/lib/misc/dnsmasq.leases"
 
 # --- Helper Functions ---
@@ -22,7 +23,7 @@ def run_command(command, remote=True, capture_output=False):
     """Runs a command locally or remotely."""
     if remote:
         # 1. Rsync the current directory to the remote host
-        rsync_cmd = f"rsync -avz --delete --exclude='.git' {CWD}/ {REMOTE_HOST}:{REMOTE_DIR}"
+        rsync_cmd = f"rsync -avz --delete --exclude='.git' {PROJECT_ROOT}/ {REMOTE_HOST}:{REMOTE_DIR}"
         logging.info(f"Running remote command, first syncing CWD with '{rsync_cmd}'")
         subprocess.run(rsync_cmd, shell=True, check=True, capture_output=True, text=True)
 
@@ -32,7 +33,7 @@ def run_command(command, remote=True, capture_output=False):
         return subprocess.run(remote_command, shell=True, check=True, capture_output=capture_output, text=True)
     else:
         logging.info(f"Executing local command: {command}")
-        return subprocess.run(command, shell=True, check=True, cwd=CWD, capture_output=capture_output, text=True)
+        return subprocess.run(command, shell=True, check=True, cwd=PROJECT_ROOT, capture_output=capture_output, text=True)
 
 def generate_inventory(remote=True):
     """
