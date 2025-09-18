@@ -1,0 +1,19 @@
+---
+- name: Test Compute Node Configuration
+  hosts: compute
+  gather_facts: yes
+  vars_files:
+    - "vars/main.yml"
+    - "hardware_vars/{{ hardware_version }}.yml"
+
+  tasks:
+    - name: Run hardware independent tests
+      ansible.builtin.include_role:
+        name: networkd_wol
+        tasks_from: verify.yml
+
+    - name: Run hardware specific tests
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+        tasks_from: verify.yml
+      loop: "{{ hardware_compute_test_roles | default([]) }}"

@@ -1,0 +1,31 @@
+---
+- name: Check if ethtool is available
+  ansible.builtin.command: which ethtool
+  register: ethtool_path
+  changed_when: false
+  failed_when: false
+
+- name: Fail if ethtool is not installed
+  ansible.builtin.fail:
+    msg: "ethtool command not found. Please install ethtool."
+  when: ethtool_path.rc != 0
+
+- name: Check Wake-on-LAN status for each ethernet interface
+  ansible.builtin.command: "ethtool {{ item }}"
+  register: ethtool_output
+  changed_when: false
+  loop: "{{ ansible_facts.interfaces }}"
+  when:
+    - ethtool_path.rc == 0
+    - item.startswith('en')
+
+- name: Assert that Wake-on-LAN is enabled on ethernet interfaces
+  ansible.builtin.assert:
+    that:
+      - "'Wake-on: g' in item.stdout"
+    fail_msg: "Wake-on-LAN was not enabled for interface {{ item.item }}."
+    success_msg: "Wake-on-LAN is correctly enabled for interface {{ item.item }}."
+  loop: "{{ ethtool_output.results }}"
+  when:
+    - ethtool_path.rc == 0
+    - not item.skipped | default(false)

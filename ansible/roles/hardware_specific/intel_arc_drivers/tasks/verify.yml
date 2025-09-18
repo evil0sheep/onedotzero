@@ -1,0 +1,25 @@
+---
+- name: Check if clinfo is available
+  ansible.builtin.command: which clinfo
+  register: clinfo_path
+  changed_when: false
+  failed_when: false
+
+- name: Fail if clinfo is not installed
+  ansible.builtin.fail:
+    msg: "clinfo command not found. Please install the ocl-icd-opencl-dev package."
+  when: clinfo_path.rc != 0
+
+- name: Get GPU information from clinfo
+  ansible.builtin.command: clinfo
+  register: clinfo_output
+  changed_when: false
+  when: clinfo_path.rc == 0
+
+- name: Assert that Intel Arc A770 is present
+  ansible.builtin.assert:
+    that:
+      - "'Intel(R) Arc(TM) A770 Graphics' in clinfo_output.stdout"
+    fail_msg: "Intel Arc A770 GPU not found."
+    success_msg: "Intel Arc A770 GPU is present."
+  when: clinfo_path.rc == 0

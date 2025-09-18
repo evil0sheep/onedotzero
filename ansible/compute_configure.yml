@@ -15,10 +15,10 @@
     - networkd_wol
 
   tasks:
-    - name: Include hardware-specific driver role
-      include_role:
-        name: "{{ gpu_driver_role }}"
-      when: gpu_driver_role is defined
+    - name: Include hardware-specific configuration roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ hardware_compute_configure_roles | default([]) }}"
 
   post_tasks:
     - name: Touch timestamp file for compute node

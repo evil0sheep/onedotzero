@@ -204,6 +204,19 @@ def compute_configure(args):
     logging.info("Compute node configuration complete.")
 
 
+def compute_test(args):
+    """Tests compute nodes using Ansible."""
+    logging.info("Testing compute nodes...")
+    # if compute_wait(args) != 0:
+    #     logging.error("Compute nodes are not up. Aborting test.")
+    #     sys.exit(1)
+
+    command = (f"ansible-playbook -i {DYN_INVENTORY_RELATIVE_PATH} ansible/compute_test.yml "
+               f"--extra-vars 'hardware_version={get_hardware_version()}' --become")
+    run_command(command, remote=args.remote)
+    logging.info("Compute node testing complete.")
+
+
 def compute_ssh(args):
     """SSH into a compute node."""
     node_index = args.node_index
@@ -371,6 +384,7 @@ def main():
     compute_subparsers.add_parser('restart', help='Restart all compute nodes.').set_defaults(func=compute_restart)
     compute_subparsers.add_parser('wait', help='Wait for compute nodes to be reachable.').set_defaults(func=compute_wait)
     compute_subparsers.add_parser('configure', help='Run Ansible configuration on compute nodes.').set_defaults(func=compute_configure)
+    compute_subparsers.add_parser('test', help='Run Ansible tests on compute nodes.').set_defaults(func=compute_test)
 
     ssh_parser = compute_subparsers.add_parser('ssh', help='SSH into a compute node.')
     ssh_parser.add_argument('node_index', type=int, help='The 0-based index of the compute node.')

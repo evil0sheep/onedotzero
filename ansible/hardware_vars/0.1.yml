@@ -12,4 +12,8 @@ compute_nodes:
       name: "compute1",
     }
 
-gpu_driver_role: "hardware_specific/intel_arc_drivers"
+hardware_compute_configure_roles:
+  - "hardware_specific/intel_arc_drivers"
+
+hardware_compute_test_roles:
+  - "hardware_specific/intel_arc_drivers"
