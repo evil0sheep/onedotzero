@@ -24,3 +24,13 @@
     - /srv/tftp
     - /srv/http
     - /srv/http/ubuntu_golden
+
+- name: Configure SSH client for compute nodes
+  blockinfile:
+    path: "{{ ansible_env.HOME }}/.ssh/config"
+    create: yes
+    mode: "0600"
+    block: |
+      Host 192.168.1.*
+          StrictHostKeyChecking no
+          UserKnownHostsFile /dev/null
