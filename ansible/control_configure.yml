@@ -1,4 +1,38 @@
 ---
+# Play 1: Run tasks as the ansible_user
+- hosts: localhost
+  connection: local
+  become: no
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Read SSH public key
+      slurp:
+        src: "{{ ansible_user_dir }}/.ssh/id_ed25519.pub"
+      register: ssh_public_key_slurp
+
+    - name: Set SSH public key fact
+      set_fact:
+        ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
+
+    - name: Configure SSH client for compute nodes
+      blockinfile:
+        path: "{{ ansible_user_dir }}/.ssh/config"
+        create: yes
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: 0600
+        block: |
+          {% for node in compute_nodes %}
+          Host {{ node.name }}
+            HostName {{ node.ip }}
+            User compute
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          {% endfor %}
+
+# Play 2: Run tasks as root
 - hosts: localhost
   connection: local
   become: yes
@@ -27,15 +61,6 @@
         name: ansible
         state: present
         update_cache: yes
-
-    - name: Read SSH public key
-      slurp:
-        src: "/home/forrest/.ssh/id_ed25519.pub"
-      register: ssh_public_key_slurp
-
-    - name: Set SSH public key fact
-      set_fact:
-        ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
   roles:
     - common
     - gateway

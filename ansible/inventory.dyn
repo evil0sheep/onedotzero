@@ -2,4 +2,4 @@
 192.168.10.101
 
 [compute:vars]
-ansible_user=root
+ansible_user=compute

@@ -100,7 +100,7 @@ def generate_inventory():
 
     inventory_content = "[compute]\n"
     inventory_content += "\n".join(rendered_ips)
-    inventory_content += "\n\n[compute:vars]\nansible_user=root\n"
+    inventory_content += "\n\n[compute:vars]\nansible_user=compute\n"
 
     with open(DYN_INVENTORY_PATH, 'w') as f:
         f.write(inventory_content)
@@ -151,7 +151,7 @@ def compute_down(args):
     """Shuts down compute nodes."""
     logging.info("Shutting down compute nodes...")
     generate_inventory()
-    command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown now"'
+    command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown now" --become'
     try:
         run_command(command, remote=args.remote, suppress_errors=True, capture_output=True)
     except subprocess.CalledProcessError as e:
@@ -162,7 +162,7 @@ def compute_restart(args):
     """Reboots compute nodes."""
     print("Rebooting compute nodes...")
     generate_inventory()
-    command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown -r now"'
+    command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown -r now" --become'
     try:
         run_command(command, remote=args.remote, suppress_errors=True, capture_output=True)
     except subprocess.CalledProcessError as e:
@@ -204,6 +204,25 @@ def compute_configure(args):
     logging.info("Compute node configuration complete.")
 
 
+def compute_ssh(args):
+    """SSH into a compute node."""
+    node_index = args.node_index
+    try:
+        node_name = HARDWARE_CONFIG['compute_nodes'][node_index]['name']
+    except IndexError:
+        logging.error(f"Invalid node index: {node_index}")
+        sys.exit(1)
+
+    if args.remote:
+        remote_host = HARDWARE_CONFIG.get("control_host", "control")
+        command = f"ssh -t {remote_host} 'ssh {node_name}'"
+        # For interactive SSH, we use os.system to hand over control
+        print(f"Connecting to {node_name} via {remote_host}...")
+        os.system(command)
+    else:
+        command = f"ssh {node_name}"
+        print(f"Connecting to {node_name}...")
+        os.system(command)
 
 
 def control_configure(args):
@@ -352,6 +371,10 @@ def main():
     compute_subparsers.add_parser('restart', help='Restart all compute nodes.').set_defaults(func=compute_restart)
     compute_subparsers.add_parser('wait', help='Wait for compute nodes to be reachable.').set_defaults(func=compute_wait)
     compute_subparsers.add_parser('configure', help='Run Ansible configuration on compute nodes.').set_defaults(func=compute_configure)
+
+    ssh_parser = compute_subparsers.add_parser('ssh', help='SSH into a compute node.')
+    ssh_parser.add_argument('node_index', type=int, help='The 0-based index of the compute node.')
+    ssh_parser.set_defaults(func=compute_ssh)
 
     # Control commands
     control_parser = subparsers.add_parser('control', help='Manage the control node.')

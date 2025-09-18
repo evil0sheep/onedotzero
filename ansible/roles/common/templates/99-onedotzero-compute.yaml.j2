@@ -1,0 +1,7 @@
+network:
+  version: 2
+  ethernets:
+    "{{ compute_interface }}":
+      dhcp4: no
+      addresses:
+        - "{{ control_node_ip }}/24"
