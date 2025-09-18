@@ -47,6 +47,34 @@
     - "apt-get install -y linux-image-generic openssh-server nfs-common overlayroot"
     - "mkdir -p /root/.ssh"
     - "chmod 700 /root/.ssh"
+
+- name: Create compute user in chroot
+  command: "chroot /srv/nfs/ubuntu2204 useradd -m -s /bin/bash compute"
+  args:
+    creates: /srv/nfs/ubuntu2204/home/compute
+
+- name: Create .ssh directory for compute user in chroot
+  file:
+    path: /srv/nfs/ubuntu2204/home/compute/.ssh
+    state: directory
+    owner: 1000
+    group: 1000
+    mode: "0700"
+
+- name: Add SSH key for compute user in chroot
+  copy:
+    content: "{{ ssh_public_key }}"
+    dest: /srv/nfs/ubuntu2204/home/compute/.ssh/authorized_keys
+    owner: 1000
+    group: 1000
+    mode: "0600"
+
+- name: Grant passwordless sudo to compute user in chroot
+  copy:
+    content: "compute ALL=(ALL) NOPASSWD: ALL"
+    dest: /srv/nfs/ubuntu2204/etc/sudoers.d/compute
+    mode: "0440"
+
 - name: Add SSH key to chroot
   copy:
     content: "{{ ssh_public_key }}"
