@@ -1,0 +1,41 @@
+---
+- name: Ensure dependencies for adding repository are installed
+  ansible.builtin.apt:
+    name:
+      - gpg-agent
+      - wget
+    state: present
+    update_cache: yes
+
+- name: Get Intel graphics GPG key
+  ansible.builtin.get_url:
+    url: https://repositories.intel.com/gpu/intel-graphics.key
+    dest: /usr/share/keyrings/intel-graphics.key
+    mode: "0644"
+    force: true
+
+- name: Add Intel graphics repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.key] https://repositories.intel.com/gpu/ubuntu noble unified"
+    state: present
+    filename: intel-gpu-noble
+
+- name: Install Intel GPU driver packages
+  ansible.builtin.apt:
+    name:
+      - libze-intel-gpu1
+      - libze1
+      - intel-metrics-discovery
+      - intel-opencl-icd
+      - clinfo
+      - intel-gsc
+      - libze-dev
+      - intel-ocloc
+    state: present
+    update_cache: yes
+
+- name: Add compute user to render group
+  ansible.builtin.user:
+    name: compute
+    groups: render
+    append: yes

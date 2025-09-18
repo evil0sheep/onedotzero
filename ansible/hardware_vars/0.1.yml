@@ -7,3 +7,5 @@ debootstrap_arch: "amd64"
 
 compute_nodes:
   - { mac: "d8:bb:c1:9b:84:8b", ip: "192.168.1.101", name: "compute1" }
+
+gpu_driver_role: "hardware_specific/intel_arc_drivers"

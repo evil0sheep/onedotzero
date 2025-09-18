@@ -16,23 +16,23 @@
     creates: /srv/tftp/boot/grub/x86_64-efi/core.efi
 
 - name: Find the latest kernel image in the NFS root
-  shell: "ls -t /srv/nfs/ubuntu2204/boot/vmlinuz-* | head -n 1"
+  shell: "ls -t /srv/nfs/ubuntu2404/boot/vmlinuz-* | head -n 1"
   register: latest_kernel
   changed_when: false
 
 - name: Find the latest initrd image in the NFS root
-  shell: "ls -t /srv/nfs/ubuntu2204/boot/initrd.img-* | head -n 1"
+  shell: "ls -t /srv/nfs/ubuntu2404/boot/initrd.img-* | head -n 1"
   register: latest_initrd
   changed_when: false
 
 - name: Fail if kernel is not found
   fail:
-    msg: "Could not find a kernel image in /srv/nfs/ubuntu2204/boot"
+    msg: "Could not find a kernel image in /srv/nfs/ubuntu2404/boot"
   when: latest_kernel.stdout == ""
 
 - name: Fail if initrd is not found
   fail:
-    msg: "Could not find an initrd image in /srv/nfs/ubuntu2204/boot"
+    msg: "Could not find an initrd image in /srv/nfs/ubuntu2404/boot"
   when: latest_initrd.stdout == ""
 
 - name: Copy kernel and initrd from NFS root to TFTP directory

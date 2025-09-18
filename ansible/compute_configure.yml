@@ -2,8 +2,23 @@
   connection: ssh
   become: yes
   gather_facts: yes
+  vars_files:
+    - "hardware_vars/{{ hardware_version }}.yml"
+
+  pre_tasks:
+    - name: Remove old SSH host key for compute node
+      command: "ssh-keygen -R {{ inventory_hostname }}"
+      delegate_to: localhost
+      ignore_errors: true
+
   roles:
     - networkd_wol
+
+  tasks:
+    - name: Include hardware-specific driver role
+      include_role:
+        name: "{{ gpu_driver_role }}"
+      when: gpu_driver_role is defined
 
   post_tasks:
     - name: Touch timestamp file for compute node

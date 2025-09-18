@@ -9,28 +9,38 @@
 
 - name: Create NFS root directory
   file:
-    path: /srv/nfs/ubuntu2204
+    path: /srv/nfs/ubuntu2404
     state: directory
     mode: "0755"
 
 - name: Check if debootstrap has already run
   stat:
-    path: /srv/nfs/ubuntu2204/etc/os-release
+    path: /srv/nfs/ubuntu2404/etc/os-release
   register: debootstrap_check
 
-- name: Run debootstrap to create Ubuntu 22.04 filesystem
-  command: debootstrap --arch=amd64 jammy /srv/nfs/ubuntu2204
+- name: Run debootstrap to create Ubuntu 24.04 filesystem
+  command: debootstrap --arch=amd64 noble /srv/nfs/ubuntu2404
   when: not debootstrap_check.stat.exists
 
 - name: Copy host's resolv.conf for network access in chroot
   copy:
     src: /etc/resolv.conf
-    dest: /srv/nfs/ubuntu2204/etc/resolv.conf
+    dest: /srv/nfs/ubuntu2404/etc/resolv.conf
     remote_src: yes
+
+- name: Configure APT sources for chroot
+  copy:
+    dest: /srv/nfs/ubuntu2404/etc/apt/sources.list
+    content: |
+      deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+    mode: "0644"
 
 - name: Mount pseudo-filesystems for chroot
   mount:
-    path: "/srv/nfs/ubuntu2204/{{ item }}"
+    path: "/srv/nfs/ubuntu2404/{{ item }}"
     src: "/{{ item }}"
     fstype: none
     opts: bind
@@ -41,21 +51,22 @@
     - dev
 
 - name: Chroot and configure the base system
-  command: "chroot /srv/nfs/ubuntu2204 {{ item }}"
+  command: "chroot /srv/nfs/ubuntu2404 {{ item }}"
   loop:
     - "apt-get update"
+    - "apt-get dist-upgrade -y"
     - "apt-get install -y linux-image-generic openssh-server nfs-common overlayroot"
     - "mkdir -p /root/.ssh"
     - "chmod 700 /root/.ssh"
 
 - name: Create compute user in chroot
-  command: "chroot /srv/nfs/ubuntu2204 useradd -m -s /bin/bash compute"
+  command: "chroot /srv/nfs/ubuntu2404 useradd -m -s /bin/bash compute"
   args:
-    creates: /srv/nfs/ubuntu2204/home/compute
+    creates: /srv/nfs/ubuntu2404/home/compute
 
 - name: Create .ssh directory for compute user in chroot
   file:
-    path: /srv/nfs/ubuntu2204/home/compute/.ssh
+    path: /srv/nfs/ubuntu2404/home/compute/.ssh
     state: directory
     owner: 1000
     group: 1000
@@ -64,7 +75,7 @@
 - name: Add SSH key for compute user in chroot
   copy:
     content: "{{ ssh_public_key }}"
-    dest: /srv/nfs/ubuntu2204/home/compute/.ssh/authorized_keys
+    dest: /srv/nfs/ubuntu2404/home/compute/.ssh/authorized_keys
     owner: 1000
     group: 1000
     mode: "0600"
@@ -72,42 +83,42 @@
 - name: Grant passwordless sudo to compute user in chroot
   copy:
     content: "compute ALL=(ALL) NOPASSWD: ALL"
-    dest: /srv/nfs/ubuntu2204/etc/sudoers.d/compute
+    dest: /srv/nfs/ubuntu2404/etc/sudoers.d/compute
     mode: "0440"
 
 - name: Add SSH key to chroot
   copy:
     content: "{{ ssh_public_key }}"
-    dest: /srv/nfs/ubuntu2204/root/.ssh/authorized_keys
+    dest: /srv/nfs/ubuntu2404/root/.ssh/authorized_keys
     mode: "0600"
 
 - name: Set hostname in chroot
   copy:
     content: "compute-node"
-    dest: /srv/nfs/ubuntu2204/etc/hostname
+    dest: /srv/nfs/ubuntu2404/etc/hostname
     mode: "0644"
 
 - name: Configure overlayroot
   copy:
     content: |
       overlayroot="tmpfs:swap=1,recurse=0"
-    dest: /srv/nfs/ubuntu2204/etc/overlayroot.conf
+    dest: /srv/nfs/ubuntu2404/etc/overlayroot.conf
     mode: "0644"
 
 - name: Update the initramfs in the chroot
-  command: "chroot /srv/nfs/ubuntu2204 update-initramfs -u"
+  command: "chroot /srv/nfs/ubuntu2404 update-initramfs -u"
   changed_when: false
 
 - name: Create fstab in chroot
   copy:
-    dest: /srv/nfs/ubuntu2204/etc/fstab
+    dest: /srv/nfs/ubuntu2404/etc/fstab
     content: |
       proc /proc proc defaults 0 0
       sysfs /sys sysfs defaults 0 0
 
 - name: Unmount pseudo-filesystems
   mount:
-    path: "/srv/nfs/ubuntu2204/{{ item }}"
+    path: "/srv/nfs/ubuntu2404/{{ item }}"
     state: unmounted
   loop:
     - proc
