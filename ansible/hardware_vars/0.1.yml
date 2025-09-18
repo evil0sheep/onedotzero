@@ -12,7 +12,9 @@ compute_nodes:
       name: "compute1",
     }
 
-hardware_compute_configure_roles:
+hardware_compute_configure_roles: []
+
+hardware_golden_image_roles:
   - "hardware_specific/intel_arc_drivers"
 
 hardware_compute_test_roles:

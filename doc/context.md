@@ -22,7 +22,7 @@ The plan is for the compute nodes in each cluster to PXE boot a shared linux ima
 -   **Network:** Fully connected.
 
 # Workflow Description
-We will be working on my macbook editing files locally and then rsyncing them to the NUC and executing them remotely over SSH using the `cluster` command. if you run commands locally you will not have access to ansible or the compute nodes. use `cluster control command` to execute custom commands on the control node and
+We will be working on my macbook editing files locally and then rsyncing them to the NUC and executing them remotely over SSH using the `cluster` command. if you run commands locally you will not have access to ansible or the compute nodes. use `cluster control cmd` to execute custom commands on the control node and
 
 # TODO
 

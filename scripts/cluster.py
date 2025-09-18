@@ -241,8 +241,9 @@ def compute_ssh(args):
 def control_configure(args):
     """Configures the control node using Ansible."""
     inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
+    # we have to run this as sudo because the chroot connection requires it
     command = (
-               f"ansible-playbook -i {inventory_path} ansible/control_configure.yml "
+               f"sudo -E ansible-playbook -i {inventory_path} ansible/control_configure.yml "
                f"--extra-vars 'hardware_version={get_hardware_version()}' --become")
     run_command(command, remote=args.remote)
     logging.info("Control node configuration complete.")

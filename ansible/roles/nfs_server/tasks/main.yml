@@ -28,16 +28,6 @@
     dest: /srv/nfs/ubuntu_golden/etc/resolv.conf
     remote_src: yes
 
-- name: Configure APT sources for chroot
-  copy:
-    dest: /srv/nfs/ubuntu_golden/etc/apt/sources.list
-    content: |
-      deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-      deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-      deb http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
-      deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
-    mode: "0644"
-
 - name: Mount pseudo-filesystems for chroot
   mount:
     path: "/srv/nfs/ubuntu_golden/{{ item }}"
@@ -50,71 +40,110 @@
     - sys
     - dev
 
-- name: Chroot and configure the base system
-  command: "chroot /srv/nfs/ubuntu_golden {{ item }}"
-  loop:
-    - "apt-get update"
-    - "apt-get dist-upgrade -y"
-    - "apt-get install -y linux-image-generic openssh-server nfs-common overlayroot"
-    - "mkdir -p /root/.ssh"
-    - "chmod 700 /root/.ssh"
-
-- name: Create compute user in chroot
-  command: "chroot /srv/nfs/ubuntu_golden useradd -m -s /bin/bash compute"
-  args:
-    creates: /srv/nfs/ubuntu_golden/home/compute
-
-- name: Create .ssh directory for compute user in chroot
-  file:
-    path: /srv/nfs/ubuntu_golden/home/compute/.ssh
-    state: directory
-    owner: 1000
-    group: 1000
-    mode: "0700"
-
-- name: Add SSH key for compute user in chroot
-  copy:
-    content: "{{ ssh_public_key }}"
-    dest: /srv/nfs/ubuntu_golden/home/compute/.ssh/authorized_keys
-    owner: 1000
-    group: 1000
-    mode: "0600"
-
-- name: Grant passwordless sudo to compute user in chroot
-  copy:
-    content: "compute ALL=(ALL) NOPASSWD: ALL"
-    dest: /srv/nfs/ubuntu_golden/etc/sudoers.d/compute
-    mode: "0440"
-
-- name: Add SSH key to chroot
-  copy:
-    content: "{{ ssh_public_key }}"
-    dest: /srv/nfs/ubuntu_golden/root/.ssh/authorized_keys
-    mode: "0600"
-
-- name: Set hostname in chroot
-  copy:
-    content: "compute-node"
-    dest: /srv/nfs/ubuntu_golden/etc/hostname
-    mode: "0644"
-
-- name: Configure overlayroot
-  copy:
-    content: |
-      overlayroot="tmpfs:swap=1,recurse=0"
-    dest: /srv/nfs/ubuntu_golden/etc/overlayroot.conf
-    mode: "0644"
-
-- name: Update the initramfs in the chroot
-  command: "chroot /srv/nfs/ubuntu_golden update-initramfs -u"
+- name: Add golden image chroot to inventory
+  add_host:
+    name: golden_image_chroot
+    ansible_connection: chroot
+    ansible_host: /srv/nfs/ubuntu_golden
   changed_when: false
 
-- name: Create fstab in chroot
-  copy:
-    dest: /srv/nfs/ubuntu_golden/etc/fstab
-    content: |
-      proc /proc proc defaults 0 0
-      sysfs /sys sysfs defaults 0 0
+# All chroot operations are now done via Ansible modules delegated to the chroot host
+- name: Configure the golden image via chroot
+  delegate_to: golden_image_chroot
+  block:
+    - name: Configure APT sources for chroot
+      copy:
+        dest: /etc/apt/sources.list
+        content: |
+          deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+          deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+          deb http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+          deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+        mode: "0644"
+
+    - name: Update apt cache and upgrade system in chroot
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install base packages in chroot
+      apt:
+        name:
+          - linux-image-generic
+          - openssh-server
+          - nfs-common
+          - overlayroot
+        state: present
+
+    - name: Include hardware-specific golden image roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ hardware_golden_image_roles | default([]) }}"
+
+    - name: Ensure root .ssh directory exists in chroot
+      file:
+        path: /root/.ssh
+        state: directory
+        mode: "0700"
+
+    - name: Add SSH key to root user in chroot
+      copy:
+        content: "{{ ssh_public_key }}"
+        dest: /root/.ssh/authorized_keys
+        mode: "0600"
+
+    - name: Create compute user in chroot
+      user:
+        name: compute
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Ensure .ssh directory exists for compute user in chroot
+      file:
+        path: /home/compute/.ssh
+        state: directory
+        owner: compute
+        group: compute
+        mode: "0700"
+
+    - name: Add SSH key for compute user in chroot
+      copy:
+        content: "{{ ssh_public_key }}"
+        dest: /home/compute/.ssh/authorized_keys
+        owner: compute
+        group: compute
+        mode: "0600"
+
+    - name: Grant passwordless sudo to compute user in chroot
+      copy:
+        content: "compute ALL=(ALL) NOPASSWD: ALL"
+        dest: /etc/sudoers.d/compute
+        mode: "0440"
+
+    - name: Set hostname in chroot
+      copy:
+        content: "compute-node"
+        dest: /etc/hostname
+        mode: "0644"
+
+    - name: Configure overlayroot
+      copy:
+        content: |
+          overlayroot="tmpfs:swap=1,recurse=0"
+        dest: /etc/overlayroot.conf
+        mode: "0644"
+
+    - name: Create fstab in chroot
+      copy:
+        dest: /etc/fstab
+        content: |
+          proc /proc proc defaults 0 0
+          sysfs /sys sysfs defaults 0 0
+
+    - name: Update the initramfs in the chroot
+      command: "update-initramfs -u"
+      changed_when: false
 
 - name: Unmount pseudo-filesystems
   mount:

@@ -7,9 +7,13 @@
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"
   tasks:
+    - name: Set real user dir fact
+      set_fact:
+        real_user_dir: "{{ ansible_env.HOME }}"
+
     - name: Read SSH public key
       slurp:
-        src: "{{ ansible_user_dir }}/.ssh/id_ed25519.pub"
+        src: "{{ real_user_dir }}/.ssh/id_ed25519.pub"
       register: ssh_public_key_slurp
 
     - name: Set SSH public key fact
@@ -18,10 +22,10 @@
 
     - name: Configure SSH client for compute nodes
       blockinfile:
-        path: "{{ ansible_user_dir }}/.ssh/config"
+        path: "{{ real_user_dir }}/.ssh/config"
         create: yes
-        owner: "{{ ansible_user_id }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ ansible_real_user_id }}"
+        group: "{{ ansible_real_group_id }}"
         mode: 0600
         block: |
           {% for node in compute_nodes %}
@@ -83,19 +87,11 @@
   post_tasks:
     - name: Ensure remote directory exists
       file:
-        path: "{{ ansible_user_dir }}/remote/onedotzero"
+        path: "{{ real_user_dir }}/remote/onedotzero"
         state: directory
-        owner: "{{ ansible_user_id }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ ansible_real_user_id }}"
+        group: "{{ ansible_real_group_id }}"
         mode: "0755"
-
-    - name: Touch timestamp file for control node
-      file:
-        path: "{{ ansible_user_dir }}/remote/onedotzero/.last_configured_control"
-        state: touch
-        owner: "{{ ansible_user_id }}"
-        group: "{{ ansible_user_gid }}"
-        mode: "0644"
 
     - name: Restart dnsmasq
       service:

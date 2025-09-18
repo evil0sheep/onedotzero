@@ -19,9 +19,3 @@
       ansible.builtin.include_role:
         name: "{{ item }}"
       loop: "{{ hardware_compute_configure_roles | default([]) }}"
-
-  post_tasks:
-    - name: Touch timestamp file for compute node
-      file:
-        path: /etc/last_configured_compute
-        state: touch
