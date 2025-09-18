@@ -8,7 +8,7 @@ import yaml
 import time
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # --- Configuration ---
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -45,7 +45,7 @@ def load_hardware_config(version):
         logging.error(f"Hardware config file not found for version '{version}' at {config_path}")
         sys.exit(1)
 
-def run_command(command, remote=True, capture_output=False, check=True):
+def run_command(command, remote=True, capture_output=False, check=True, suppress_errors=False):
     """Runs a command locally or remotely."""
     remote_host = HARDWARE_CONFIG.get("control_host", "control")
 
@@ -67,12 +67,13 @@ def run_command(command, remote=True, capture_output=False, check=True):
 
     # Optionally check for errors
     if check and process.returncode != 0:
-        # Log details for debugging
-        logging.error(f"Command failed with exit code {process.returncode}")
-        logging.error(f"Command: {cmd_to_run}")
-        if capture_output:
-            logging.error(f"Stdout: {process.stdout}")
-            logging.error(f"Stderr: {process.stderr}")
+        if not suppress_errors:
+            # Log details for debugging
+            logging.error(f"Command failed with exit code {process.returncode}")
+            logging.error(f"Command: {cmd_to_run}")
+            if capture_output:
+                logging.error(f"Stdout: {process.stdout}")
+                logging.error(f"Stderr: {process.stderr}")
         raise subprocess.CalledProcessError(process.returncode, cmd_to_run, output=process.stdout, stderr=process.stderr)
 
     return process
@@ -137,24 +138,24 @@ def compute_down(args):
     generate_inventory()
     command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown now"'
     try:
-        run_command(command, remote=args.remote)
+        run_command(command, remote=args.remote, suppress_errors=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         logging.info(f"SSH connection failed during shutdown, which is expected: {e}")
 
 
 def compute_restart(args):
     """Reboots compute nodes."""
-    logging.info("Rebooting compute nodes...")
+    print("Rebooting compute nodes...")
     generate_inventory()
     command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown -r now"'
     try:
-        run_command(command, remote=args.remote)
+        run_command(command, remote=args.remote, suppress_errors=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         logging.info(f"SSH connection failed during reboot, which is expected: {e}")
 
 def compute_wait(args):
     """Waits for all compute nodes to become reachable."""
-    logging.info("Waiting for all compute nodes to become reachable...")
+    print("Waiting for all compute nodes to become reachable...")
     generate_inventory()
 
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
@@ -165,11 +166,11 @@ def compute_wait(args):
     for i in range(100): # Increased attempts
         try:
             command = f"ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m ping"
-            run_command(command, remote=args.remote, capture_output=True)
-            logging.info("All compute nodes are reachable.")
+            run_command(command, remote=args.remote, capture_output=True, suppress_errors=True)
+            print("All compute nodes are reachable.")
             return 0
         except subprocess.CalledProcessError:
-            logging.info(f"Attempt {i+1}/100 failed. Retrying in 1 second...")
+            print(f"Attempt {i+1}/100 failed. Retrying in 1 second...")
             time.sleep(1)
 
     logging.error(f"Not all compute nodes were reachable after 100 attempts.")
