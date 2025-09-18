@@ -28,7 +28,7 @@ We will be working on my macbook editing files locally and then rsyncing them to
 
 Please read each task in the todo list one-by-one and for each item think about what is most ambiguous about the task description and then ask disambiguating questions which clarify the goals and requirements. Once your questions have been answered you can proceed with the task and when you are done please stop and ask for review, and once approved you can check off that task with a ✅ at the beginning of the task description and proceed to the next task.
 
-1. Improve cluster.py
+1. ✅ Improve cluster.py
   * `cluster compute wait` should wait do 100 iterations with a 1 second wait interval instead of 15 iteration with a 10 second wait interval.
   * make a new command `cluster control cmd` which takes a command string and executes it on the appropriate directory on the remote host and once working remove `scripts/remote.py`. So for example `cluster control cmd "ls -la"` would return the directory listing of the directory that was just rsynced to the control node
   * add a new command `cluster doc` which prints out a longform list of every command and a description of what it does.

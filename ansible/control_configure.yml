@@ -53,7 +53,6 @@
   roles:
     - nfs_server
     - pxe_boot
-    - nginx
     - dnsmasq
 
   post_tasks:
@@ -72,11 +71,6 @@
         owner: "{{ ansible_user_id }}"
         group: "{{ ansible_user_gid }}"
         mode: "0644"
-
-    - name: Restart nginx
-      service:
-        name: nginx
-        state: restarted
 
     - name: Restart dnsmasq
       service:
