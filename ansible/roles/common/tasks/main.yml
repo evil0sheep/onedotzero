@@ -31,6 +31,13 @@
     create: yes
     mode: "0600"
     block: |
-      Host 192.168.1.*
+      Host {{ compute_subnet }}.*
           StrictHostKeyChecking no
           UserKnownHostsFile /dev/null
+
+- name: Configure compute interface IP address
+  template:
+    src: 99-onedotzero-compute.yaml.j2
+    dest: /etc/netplan/99-onedotzero-compute.yaml
+    mode: "0644"
+  notify: apply netplan

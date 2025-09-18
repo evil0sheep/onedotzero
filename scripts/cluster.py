@@ -6,6 +6,7 @@ import os
 import logging
 import yaml
 import time
+import jinja2
 
 # Configure logging
 logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -81,10 +82,24 @@ def run_command(command, remote=True, capture_output=False, check=True, suppress
 def generate_inventory():
     """Generates an Ansible inventory from the hardware config file."""
     logging.info("Generating inventory from hardware config...")
+
+    # Load ansible vars
+    vars_path = os.path.join(ANSIBLE_DIR, "vars", "main.yml")
+    with open(vars_path, 'r') as f:
+        ansible_vars = yaml.safe_load(f)
+
+    # Initialize Jinja2 environment
+    env = jinja2.Environment()
+
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
+    rendered_ips = []
+    for node in compute_nodes:
+        template = env.from_string(node['ip'])
+        rendered_ip = template.render(ansible_vars)
+        rendered_ips.append(rendered_ip)
 
     inventory_content = "[compute]\n"
-    inventory_content += "\n".join([node['ip'] for node in compute_nodes])
+    inventory_content += "\n".join(rendered_ips)
     inventory_content += "\n\n[compute:vars]\nansible_user=root\n"
 
     with open(DYN_INVENTORY_PATH, 'w') as f:

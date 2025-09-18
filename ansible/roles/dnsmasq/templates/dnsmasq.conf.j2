@@ -1,6 +1,6 @@
 interface={{ compute_interface }}
 bind-interfaces
-dhcp-range={{ compute_interface }},192.168.1.50,192.168.1.100,12h
+dhcp-range={{ compute_interface }},{{ compute_subnet }}.50,{{ compute_subnet }}.99,12h
 dhcp-option=option:dns-server,8.8.8.8
 
 # Static DHCP assignments for compute nodes
