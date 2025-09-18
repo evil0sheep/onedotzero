@@ -114,6 +114,7 @@ def get_broadcast_address(args):
         sys.exit(1)
 
 def compute_up(args):
+    """Brings compute nodes up using Wake-on-LAN."""
     logging.info("Bringing compute nodes up...")
     macs = [node['mac'] for node in HARDWARE_CONFIG.get("compute_nodes", [])]
     if not macs:
@@ -131,6 +132,7 @@ def compute_up(args):
     compute_wait(args)
 
 def compute_down(args):
+    """Shuts down compute nodes."""
     logging.info("Shutting down compute nodes...")
     generate_inventory()
     command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown now"'
@@ -141,6 +143,7 @@ def compute_down(args):
 
 
 def compute_restart(args):
+    """Reboots compute nodes."""
     logging.info("Rebooting compute nodes...")
     generate_inventory()
     command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown -r now"'
@@ -150,6 +153,7 @@ def compute_restart(args):
         logging.info(f"SSH connection failed during reboot, which is expected: {e}")
 
 def compute_wait(args):
+    """Waits for all compute nodes to become reachable."""
     logging.info("Waiting for all compute nodes to become reachable...")
     generate_inventory()
 
@@ -158,20 +162,21 @@ def compute_wait(args):
         logging.warning("No compute nodes defined in hardware config.")
         return 0
 
-    for i in range(15): # Increased attempts
+    for i in range(100): # Increased attempts
         try:
             command = f"ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m ping"
             run_command(command, remote=args.remote, capture_output=True)
             logging.info("All compute nodes are reachable.")
             return 0
         except subprocess.CalledProcessError:
-            logging.info(f"Attempt {i+1}/15 failed. Retrying in 10 seconds...")
-            time.sleep(10)
+            logging.info(f"Attempt {i+1}/100 failed. Retrying in 1 second...")
+            time.sleep(1)
 
-    logging.error(f"Not all compute nodes were reachable after 15 attempts.")
+    logging.error(f"Not all compute nodes were reachable after 100 attempts.")
     sys.exit(1)
 
 def compute_configure(args):
+    """Configures compute nodes using Ansible."""
     logging.info("Configuring compute nodes...")
     if compute_wait(args) != 0:
         logging.error("Compute nodes are not up. Aborting configuration.")
@@ -186,12 +191,17 @@ def compute_configure(args):
 
 
 def control_configure(args):
+    """Configures the control node using Ansible."""
     inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
     command = (
                f"ansible-playbook -i {inventory_path} ansible/control_configure.yml "
                f"--extra-vars 'hardware_version={get_hardware_version()}' --become")
     run_command(command, remote=args.remote)
     logging.info("Control node configuration complete.")
+
+def control_cmd(args):
+    """Executes a command on the control node."""
+    run_command(args.command, remote=True)
 
 def cluster_configure(args):
     """Configures the entire cluster from scratch."""
@@ -271,6 +281,36 @@ def hardware_get(args):
     """Gets the active hardware version."""
     print(get_hardware_version())
 
+def cluster_doc(args):
+    """Prints out a longform list of every command and a description of what it does."""
+    print("# Cluster Command Documentation")
+
+    # This is a bit manual, but it's the simplest way to get the structure
+    # without a more complex framework like click.
+
+    print("\n## Top-Level Commands")
+    print("* `cluster status`: Get a quick status of the cluster.")
+    print("* `cluster configure`: Configure the entire cluster.")
+
+    print("\n## Compute Commands (`cluster compute ...`)")
+    print("* `up`: Wake up all compute nodes.")
+    print("* `down`: Shut down all compute nodes.")
+    print("* `restart`: Restart all compute nodes.")
+    print("* `wait`: Wait for compute nodes to be reachable.")
+    print("* `configure`: Run Ansible configuration on compute nodes.")
+
+    print("\n## Control Commands (`cluster control ...`)")
+    print("* `configure`: Run Ansible configuration on the control node.")
+    print("* `cmd <command>`: Executes a command on the control node.")
+
+    print("\n## Hardware Commands (`cluster hardware ...`)")
+    print("* `set <version>`: Set the active hardware version (e.g., 0.1).")
+    print("* `get`: Get the active hardware version.")
+
+    print("\n## Documentation Commands (`cluster doc`)")
+    print("* `doc`: Prints out this documentation.")
+
+
 # --- Main Execution ---
 
 def main():
@@ -286,6 +326,7 @@ def main():
     # Top-level commands
     subparsers.add_parser('status', help='Get a quick status of the cluster.').set_defaults(func=cluster_status)
     subparsers.add_parser('configure', help='Configure the entire cluster.').set_defaults(func=cluster_configure)
+    subparsers.add_parser('doc', help='Prints out a longform list of every command and a description of what it does.').set_defaults(func=cluster_doc)
 
     # Compute commands
     compute_parser = subparsers.add_parser('compute', help='Manage compute nodes.')
@@ -300,6 +341,10 @@ def main():
     control_parser = subparsers.add_parser('control', help='Manage the control node.')
     control_subparsers = control_parser.add_subparsers(dest='action', required=True)
     control_subparsers.add_parser('configure', help='Run Ansible configuration on the control node.').set_defaults(func=control_configure)
+    cmd_parser = control_subparsers.add_parser('cmd', help='Execute a command on the control node.')
+    cmd_parser.add_argument('command', type=str, help='The command to execute.')
+    cmd_parser.set_defaults(func=control_cmd)
+
 
     # Hardware commands
     hardware_parser = subparsers.add_parser('hardware', help='Manage hardware configuration.')
