@@ -23,4 +23,4 @@
   loop:
     - /srv/tftp
     - /srv/http
-    - /srv/http/ubuntu2404
+    - /srv/http/ubuntu_golden
