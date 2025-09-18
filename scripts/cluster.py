@@ -95,8 +95,7 @@ def generate_inventory():
 
 def get_broadcast_address(args):
     """Gets the broadcast address for the compute interface using Ansible."""
-    logging.info("Fetching broadcast address from control node...")
-    inventory_path = os.path.join("ansible/inventory", get_hardware_version())
+    inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
     command = (
                f"ansible-playbook ansible/get_broadcast.yml "
                f"-i {inventory_path} "
@@ -187,8 +186,7 @@ def compute_configure(args):
 
 
 def control_configure(args):
-    logging.info("Configuring control node...")
-    inventory_path = os.path.join("ansible/inventory", get_hardware_version())
+    inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
     command = (
                f"ansible-playbook -i {inventory_path} ansible/control_configure.yml "
                f"--extra-vars 'hardware_version={get_hardware_version()}' --become")
@@ -198,11 +196,29 @@ def control_configure(args):
 def cluster_configure(args):
     """Configures the entire cluster from scratch."""
     logging.info("--- Starting Full Cluster Configuration ---")
+
+    # Check compute node status before shutting down
+    logging.info("Checking status of compute nodes...")
+    generate_inventory()  # Needed for get_host_status
+    compute_nodes_up = False
+    compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
+    if not compute_nodes:
+        logging.info("No compute nodes defined, skipping shutdown check.")
+    else:
+        for node in compute_nodes:
+            status = get_host_status(node['ip'], args.remote, DYN_INVENTORY_RELATIVE_PATH)
+            logging.info(f"  - Host: {node['name']} ({node['ip']}) is {status}")
+            if status == "UP":
+                compute_nodes_up = True
+
+    if compute_nodes_up:
+        logging.info("One or more compute nodes are up. Shutting them down...")
+        compute_down(args)
+    else:
+        logging.info("All compute nodes are already down. Proceeding with configuration.")
+
     control_configure(args)
-    try:
-        compute_restart(args)
-    except subprocess.CalledProcessError:
-        logging.info("Compute nodes rebooted as expected.")
+    compute_up(args)
     compute_wait(args)
     compute_configure(args)
     logging.info("--- Full Cluster Configuration Complete ---")
