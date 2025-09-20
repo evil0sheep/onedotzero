@@ -16,7 +16,7 @@ This document describes the technical implementation for PXE booting the cluster
 
 The entire process is automated by the `nfs_server` Ansible role. It prepares a golden image that is pre-configured to boot into a stateless overlay environment.
 
-1.  **Golden Image Creation:** A minimal Ubuntu 22.04 filesystem is created in `/srv/nfs/ubuntu_golden` on the control node using `debootstrap`.
+1.  **Golden Image Creation:** A minimal Ubuntu 24.04 filesystem is created in `/srv/nfs/ubuntu_golden` on the control node using `debootstrap`.
 
 2.  **Package Installation:** The `overlayroot` package, along with other essentials like the kernel and SSH server, are installed directly into the golden image using `chroot`.
 
