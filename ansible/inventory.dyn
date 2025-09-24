@@ -1,5 +1,0 @@
-[compute]
-192.168.10.101
-
-[compute:vars]
-ansible_user=compute

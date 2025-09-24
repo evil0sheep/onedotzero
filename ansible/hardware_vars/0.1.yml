@@ -7,6 +7,11 @@ debootstrap_arch: "amd64"
 
 compute_nodes:
   - {
+      mac: "d8:bb:c1:9b:85:c7",
+      ip: "{{ compute_subnet }}.100",
+      name: "compute0",
+    }
+  - {
       mac: "d8:bb:c1:9b:84:8b",
       ip: "{{ compute_subnet }}.101",
       name: "compute1",

@@ -138,10 +138,14 @@ def compute_up(args):
         return
 
     broadcast_address = get_broadcast_address(args)
-    wol_commands = [f"wakeonlan -i {broadcast_address} {mac}" for mac in macs]
-    command_str = " && ".join(wol_commands)
-
-    run_command(command_str, remote=args.remote)
+    inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
+    command = (
+        f"ansible-playbook ansible/wol_up.yml "
+        f"-i {inventory_path} "
+        f"--extra-vars '\\''{{\"hardware_version\": \"{get_hardware_version()}\", \"broadcast_address\": \"{broadcast_address}\"}}'\\''"
+    )
+    print(command)
+    run_command(command, remote=args.remote)
     logging.info("Wake-on-LAN packets sent.")
 
     logging.info("Waiting for compute nodes to come up...")
