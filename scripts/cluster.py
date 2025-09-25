@@ -52,11 +52,6 @@ def run_command(command, remote=True, capture_output=False, check=True, suppress
 
     # Construct the command
     if remote:
-        # Rsync is always checked because if it fails, nothing else will work.
-        rsync_cmd = f"rsync -avz --delete --exclude='.git' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
-        logging.debug(f"Running remote command, first syncing CWD with '{rsync_cmd}'")
-        subprocess.run(rsync_cmd, shell=True, check=True, capture_output=True, text=True)
-
         # The `exec` command ensures that ssh exits with the code of the remote command.
         cmd_to_run = f"ssh {remote_host} 'cd {REMOTE_DIR} && exec {command}'"
     else:
@@ -154,7 +149,6 @@ def compute_up(args):
 def compute_down(args):
     """Shuts down compute nodes."""
     logging.info("Shutting down compute nodes...")
-    generate_inventory()
     command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown now" --become'
     try:
         run_command(command, remote=args.remote, suppress_errors=True, capture_output=True)
@@ -165,7 +159,6 @@ def compute_down(args):
 def compute_restart(args):
     """Reboots compute nodes."""
     print("Rebooting compute nodes...")
-    generate_inventory()
     command = f'ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m shell -a "shutdown -r now" --become'
     try:
         run_command(command, remote=args.remote, suppress_errors=True, capture_output=True)
@@ -175,7 +168,6 @@ def compute_restart(args):
 def compute_wait(args):
     """Waits for all compute nodes to become reachable."""
     print("Waiting for all compute nodes to become reachable...")
-    generate_inventory()
 
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
     if not compute_nodes:
@@ -261,8 +253,7 @@ def cluster_configure(args):
     logging.info("--- Starting Full Cluster Configuration ---")
 
     # Check compute node status before shutting down
-    logging.info("Checking status of compute nodes...")
-    generate_inventory()  # Needed for get_host_status
+    logging.info("Checking status of compute nodes...") # Needed for get_host_status
     compute_nodes_up = False
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
     if not compute_nodes:
@@ -303,7 +294,6 @@ def cluster_status(args):
         print("  - No compute nodes defined in hardware config.")
     else:
         print(f"  - Expected {len(compute_nodes)} node(s) based on config.")
-        generate_inventory()
         for node in compute_nodes:
             status = get_host_status(node['ip'], args.remote, DYN_INVENTORY_RELATIVE_PATH)
             print(f"  - Host: {node['name']} ({node['ip']})")
@@ -424,6 +414,14 @@ def main():
     if args.command != 'hardware':
         version = get_hardware_version()
         load_hardware_config(version)
+
+    generate_inventory()
+    if args.remote:
+        remote_host = HARDWARE_CONFIG.get("control_host", "control")
+        # Rsync is always checked because if it fails, nothing else will work.
+        rsync_cmd = f"rsync -avz --delete --exclude='.git' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
+        logging.debug(f"Running remote command, first syncing CWD with '{rsync_cmd}'")
+        subprocess.run(rsync_cmd, shell=True, check=True, capture_output=True, text=True)
 
     args.func(args)
 
