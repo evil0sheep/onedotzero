@@ -52,6 +52,7 @@ def run_command(command, remote=True, capture_output=False, check=True, suppress
 
     # Construct the command
     if remote:
+        command = command.replace("'", "'\\''")
         # The `exec` command ensures that ssh exits with the code of the remote command.
         cmd_to_run = f"ssh {remote_host} 'cd {REMOTE_DIR} && exec {command}'"
     else:
@@ -137,7 +138,7 @@ def compute_up(args):
     command = (
         f"ansible-playbook ansible/wol_up.yml "
         f"-i {inventory_path} "
-        f"--extra-vars '\\''{{\"hardware_version\": \"{get_hardware_version()}\", \"broadcast_address\": \"{broadcast_address}\"}}'\\''"
+        f"--extra-vars '{{\"hardware_version\": \"{get_hardware_version()}\", \"broadcast_address\": \"{broadcast_address}\"}}'"
     )
     print(command)
     run_command(command, remote=args.remote)
@@ -237,12 +238,21 @@ def compute_ssh(args):
 def control_configure(args):
     """Configures the control node using Ansible."""
     inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
-    # we have to run this as sudo because the chroot connection requires it
     command = (
-               f"sudo -E ansible-playbook -i {inventory_path} ansible/control_configure.yml "
+               f"ansible-playbook -i {inventory_path} ansible/control_configure.yml "
                f"--extra-vars 'hardware_version={get_hardware_version()}' --become")
     run_command(command, remote=args.remote)
     logging.info("Control node configuration complete.")
+
+def control_build_image(args):
+    """Builds the golden image using Ansible."""
+    inventory_path = os.path.join("ansible/inventory", get_hardware_version(), "hosts.ini")
+    # we have to run this as sudo because the chroot connection requires it
+    command = (
+               f"sudo -E ansible-playbook -i {inventory_path} ansible/build_image.yml "
+               f"--extra-vars 'hardware_version={get_hardware_version()}' --become")
+    run_command(command, remote=args.remote)
+    logging.info("Golden image build complete.")
 
 def control_cmd(args):
     """Executes a command on the control node."""
@@ -271,6 +281,7 @@ def cluster_configure(args):
     else:
         logging.info("All compute nodes are already down. Proceeding with configuration.")
 
+    control_build_image(args)
     control_configure(args)
     compute_up(args)
     compute_wait(args)
@@ -389,6 +400,7 @@ def main():
     control_parser = subparsers.add_parser('control', help='Manage the control node.')
     control_subparsers = control_parser.add_subparsers(dest='action', required=True)
     control_subparsers.add_parser('configure', help='Run Ansible configuration on the control node.').set_defaults(func=control_configure)
+    control_subparsers.add_parser('build_image', help='Build the golden image.').set_defaults(func=control_build_image)
     cmd_parser = control_subparsers.add_parser('cmd', help='Execute a command on the control node.')
     cmd_parser.add_argument('command', type=str, help='The command to execute.')
     cmd_parser.set_defaults(func=control_cmd)

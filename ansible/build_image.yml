@@ -1,0 +1,47 @@
+---
+# Play 1: Run tasks as the ansible_user
+- hosts: localhost
+  connection: local
+  become: no
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Set real user dir fact
+      set_fact:
+        real_user_dir: "{{ ansible_env.HOME }}"
+
+    - name: Read SSH public key
+      slurp:
+        src: "{{ real_user_dir }}/.ssh/id_ed25519.pub"
+      register: ssh_public_key_slurp
+
+    - name: Set SSH public key fact
+      set_fact:
+        ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
+
+# Play 2: Run tasks as root
+- hosts: localhost
+  connection: local
+  become: yes
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  pre_tasks:
+    - name: Check for passwordless sudo
+      command: sudo -n true
+      register: sudo_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Fail if passwordless sudo is not configured
+      fail:
+        msg: |
+          Passwordless sudo is not configured for the current user.
+          Please configure it by running 'sudo visudo' on the control node
+          and adding the following line to the end of the file:
+          <username> ALL=(ALL) NOPASSWD: ALL
+          (replace <username> with your actual username)
+      when: sudo_check.rc != 0
+  roles:
+    - golden_image
