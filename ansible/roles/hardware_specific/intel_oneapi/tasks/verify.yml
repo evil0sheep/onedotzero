@@ -1,0 +1,29 @@
+---
+- name: Check if sycl-ls is available
+  ansible.builtin.command: which sycl-ls
+  register: sycl_ls_path
+  changed_when: false
+  failed_when: false
+  become_user: compute
+
+- name: Fail if sycl-ls is not installed
+  ansible.builtin.fail:
+    msg: "sycl-ls command not found. Please install Intel oneAPI toolkit."
+  when: sycl_ls_path.rc != 0
+
+- name: Get SYCL device information
+  ansible.builtin.shell: |
+    source /opt/intel/oneapi/setvars.sh --quiet
+    sycl-ls
+  register: sycl_ls_output
+  changed_when: false
+  become_user: compute
+  when: sycl_ls_path.rc == 0
+
+- name: Assert that Intel Arc A770 is present in SYCL devices
+  ansible.builtin.assert:
+    that:
+      - "'Intel(R) Arc(TM) A770 Graphics' in sycl_ls_output.stdout"
+    fail_msg: "Intel Arc A770 GPU not found in SYCL device list."
+    success_msg: "Intel Arc A770 GPU is present and accessible via SYCL."
+  when: sycl_ls_path.rc == 0

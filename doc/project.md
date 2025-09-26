@@ -41,3 +41,4 @@ Please read each task in the todo list one-by-one and for each item think about 
   ```
 
   5. Make a new ansible role for vLLM which installs the vLLM server on the control node and configures it for tensor parallelism and expert parallelism based on the definition of `compute_nodes` in `ansible/hardware_vars/0.1.yml`. You should use `https://huggingface.co/AMead10/Mistral-Small-Instruct-2409-awq` for testing
+  6. add `compute-node` to `127.0.0.1` line in `/etc/hosts`

@@ -1,0 +1,53 @@
+---
+- name: Ensure dependencies for adding repository are installed
+  ansible.builtin.apt:
+    name:
+      - gpg-agent
+      - wget
+    state: present
+    update_cache: yes
+
+- name: Get Intel graphics GPG key
+  ansible.builtin.get_url:
+    url: https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+    dest: /usr/share/keyrings/oneapi-archive-keyring.key
+    mode: "0644"
+    force: true
+
+# - name: Download and convert Intel oneAPI GPG key
+#   ansible.builtin.shell: |
+#     wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor > /usr/share/keyrings/oneapi-archive-keyring.gpg
+#   args:
+#     creates: /usr/share/keyrings/oneapi-archive-keyring.gpg
+
+# - name: Set proper permissions on keyring
+#   ansible.builtin.file:
+#     path: /usr/share/keyrings/oneapi-archive-keyring.gpg
+#     mode: "0644"
+#     owner: root
+#     group: root
+
+- name: Add Intel oneAPI repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/oneapi-archive-keyring.key] https://apt.repos.intel.com/oneapi all main"
+    state: present
+    filename: oneapi
+
+- name: Install Intel oneAPI base toolkit
+  ansible.builtin.apt:
+    name:
+      - intel-basekit
+    state: present
+    update_cache: yes
+
+- name: Create oneAPI environment setup script in /etc/profile.d/
+  ansible.builtin.copy:
+    content: |
+      # Intel oneAPI environment setup
+      if [ -f /opt/intel/oneapi/setvars.sh ]; then
+          source /opt/intel/oneapi/setvars.sh --quiet
+      fi
+    dest: /etc/profile.d/intel-oneapi.sh
+    mode: "0755"
+    owner: root
+    group: root

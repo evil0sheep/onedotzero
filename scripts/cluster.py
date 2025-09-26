@@ -232,9 +232,6 @@ def compute_wait(args):
 def compute_configure(args):
     """Configures compute nodes using Ansible."""
     logging.info("Configuring compute nodes...")
-    if compute_wait(args) != 0:
-        logging.error("Compute nodes are not up. Aborting configuration.")
-        sys.exit(1)
 
     command = (
         f"ansible-playbook -i {DYN_INVENTORY_RELATIVE_PATH} ansible/compute_configure.yml "
