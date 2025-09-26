@@ -1,5 +1,5 @@
 ---
-# Play 1: Run tasks as the ansible_user
+# Play 1: Gather SSH key from the user running the playbook
 - hosts: localhost
   connection: local
   become: no
@@ -20,7 +20,7 @@
       set_fact:
         ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
 
-# Play 2: Run tasks as root
+# Play 2: Prepare the chroot environment on the control node
 - hosts: localhost
   connection: local
   become: yes
@@ -43,5 +43,79 @@
           <username> ALL=(ALL) NOPASSWD: ALL
           (replace <username> with your actual username)
       when: sudo_check.rc != 0
+  tasks:
+    - name: Install debootstrap dependencies
+      apt:
+        name:
+          - debootstrap
+        state: present
+        update_cache: yes
+
+    - name: Create NFS root directory
+      file:
+        path: /srv/nfs/ubuntu_golden
+        state: directory
+        mode: "0755"
+
+    - name: Check if debootstrap has already run
+      stat:
+        path: /srv/nfs/ubuntu_golden/etc/os-release
+      register: debootstrap_check
+
+    - name: Run debootstrap to create Ubuntu 24.04 filesystem
+      command: debootstrap --arch=amd64 noble /srv/nfs/ubuntu_golden
+      when: not debootstrap_check.stat.exists
+
+    - name: Copy host's resolv.conf for network access in chroot
+      copy:
+        src: /etc/resolv.conf
+        dest: /srv/nfs/ubuntu_golden/etc/resolv.conf
+        remote_src: yes
+
+    - name: Mount pseudo-filesystems for chroot
+      mount:
+        path: "/srv/nfs/ubuntu_golden/{{ item }}"
+        src: "/{{ item }}"
+        fstype: none
+        opts: bind
+        state: mounted
+      loop:
+        - proc
+        - sys
+        - dev
+
+    - name: Add golden_image_chroot host to inventory
+      add_host:
+        name: golden_image_chroot
+        ansible_connection: chroot
+        ansible_host: /srv/nfs/ubuntu_golden
+        ssh_key_for_chroot: "{{ ssh_public_key }}"
+      changed_when: false
+
+# Play 3: Configure the golden image via chroot
+- hosts: golden_image_chroot
+  become: yes
+  vars_files:
+    - "vars/main.yml"
+    - "hardware_vars/{{ hardware_version }}.yml"
   roles:
-    - golden_image
+    - chroot_config
+  tasks:
+    - name: Include hardware-specific golden image roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ hardware_golden_image_roles | default([]) }}"
+
+# Play 4: Cleanup the chroot environment
+- hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Unmount pseudo-filesystems
+      mount:
+        path: "/srv/nfs/ubuntu_golden/{{ item }}"
+        state: unmounted
+      loop:
+        - proc
+        - sys
+        - dev

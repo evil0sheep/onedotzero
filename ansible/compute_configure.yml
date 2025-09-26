@@ -12,7 +12,6 @@
       ignore_errors: true
 
   roles:
-    - networkd_wol
 
   tasks:
     - name: Include hardware-specific configuration roles

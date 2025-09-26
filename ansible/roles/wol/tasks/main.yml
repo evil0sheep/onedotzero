@@ -1,34 +1,13 @@
-- name: Find netplan configuration file
-  find:
-    paths: /etc/netplan
-    patterns: "*.yaml,*.yml"
-  register: netplan_config_files
-
-- name: Fail if no netplan config file found
-  fail:
-    msg: "No netplan configuration file found in /etc/netplan."
-  when: netplan_config_files.files | length == 0
-
-- name: Set netplan config file path
-  set_fact:
-    netplan_config_file: "{{ netplan_config_files.files[0].path }}"
-
-- name: Read netplan configuration
-  slurp:
-    src: "{{ netplan_config_file }}"
-  register: netplan_config_content
-
-- name: Decode netplan config
-  set_fact:
-    netplan_config: "{{ netplan_config_content['content'] | b64decode | from_yaml }}"
-
+---
 - name: Enable Wake-on-LAN for all ethernet interfaces
-  set_fact:
-    netplan_config: "{{ netplan_config | combine({ 'network': { 'ethernets': { item: { 'wakeonlan': true } } } }, recursive=True) }}"
-  loop: "{{ ansible_facts.interfaces | select('match', '^e.*') | list }}"
-
-- name: Write updated netplan configuration
   copy:
-    content: "{{ netplan_config | to_nice_yaml }}"
-    dest: "{{ netplan_config_file }}"
+    dest: /etc/netplan/99-wol.yaml
+    content: |
+      network:
+        version: 2
+        ethernets:
+          all-ethernets:
+            match:
+              name: "e*"
+            wakeonlan: true
   notify: apply netplan

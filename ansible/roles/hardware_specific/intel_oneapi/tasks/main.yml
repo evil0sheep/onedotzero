@@ -14,19 +14,6 @@
     mode: "0644"
     force: true
 
-# - name: Download and convert Intel oneAPI GPG key
-#   ansible.builtin.shell: |
-#     wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor > /usr/share/keyrings/oneapi-archive-keyring.gpg
-#   args:
-#     creates: /usr/share/keyrings/oneapi-archive-keyring.gpg
-
-# - name: Set proper permissions on keyring
-#   ansible.builtin.file:
-#     path: /usr/share/keyrings/oneapi-archive-keyring.gpg
-#     mode: "0644"
-#     owner: root
-#     group: root
-
 - name: Add Intel oneAPI repository
   ansible.builtin.apt_repository:
     repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/oneapi-archive-keyring.key] https://apt.repos.intel.com/oneapi all main"

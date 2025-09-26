@@ -1,0 +1,91 @@
+---
+- name: Configure APT sources for chroot
+  copy:
+    dest: /etc/apt/sources.list
+    content: |
+      deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+      deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+    mode: "0644"
+
+- name: Update apt cache and upgrade system in chroot
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Install base packages in chroot
+  apt:
+    name:
+      - linux-image-generic
+      - openssh-server
+      - nfs-common
+      - overlayroot
+    state: present
+
+# User config
+- name: Ensure root .ssh directory exists in chroot
+  file:
+    path: /root/.ssh
+    state: directory
+    mode: "0700"
+
+- name: Add SSH key to root user in chroot
+  copy:
+    content: "{{ ssh_key_for_chroot }}"
+    dest: /root/.ssh/authorized_keys
+    mode: "0600"
+
+- name: Create compute user in chroot
+  user:
+    name: compute
+    shell: /bin/bash
+    create_home: yes
+    state: present
+
+- name: Ensure .ssh directory exists for compute user in chroot
+  file:
+    path: /home/compute/.ssh
+    state: directory
+    owner: compute
+    group: compute
+    mode: "0700"
+
+- name: Add SSH key for compute user in chroot
+  copy:
+    content: "{{ ssh_key_for_chroot }}"
+    dest: /home/compute/.ssh/authorized_keys
+    owner: compute
+    group: compute
+    mode: "0600"
+
+- name: Grant passwordless sudo to compute user in chroot
+  copy:
+    content: "compute ALL=(ALL) NOPASSWD: ALL"
+    dest: /etc/sudoers.d/compute
+    mode: "0440"
+
+# system config
+- name: Set hostname in chroot
+  copy:
+    content: "compute-node"
+    dest: /etc/hostname
+    mode: "0644"
+
+- name: Configure overlayroot
+  copy:
+    content: |
+      overlayroot="tmpfs:swap=1,recurse=0"
+    dest: /etc/overlayroot.conf
+    mode: "0644"
+
+- name: Create fstab in chroot
+  copy:
+    dest: /etc/fstab
+    content: |
+      proc /proc proc defaults 0 0
+      sysfs /sys sysfs defaults 0 0
+
+- name: Update the initramfs in the chroot
+  command: "update-initramfs -u"
+  changed_when: false
