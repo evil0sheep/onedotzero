@@ -320,6 +320,19 @@ def control_configure(args):
     logging.info("Control node configuration complete.")
 
 
+def control_test(args):
+    """Tests the control node using Ansible."""
+    inventory_path = os.path.join(
+        "ansible/inventory", get_hardware_version(), "hosts.ini"
+    )
+    command = (
+        f"ansible-playbook -i {inventory_path} ansible/control_test.yml "
+        f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
+    )
+    run_command(command, remote=args.remote)
+    logging.info("Control node testing complete.")
+
+
 def control_build_image(args):
     """Builds the golden image using Ansible."""
     inventory_path = os.path.join(
@@ -541,6 +554,9 @@ def main():
     control_subparsers.add_parser(
         "configure", help="Run Ansible configuration on the control node."
     ).set_defaults(func=control_configure)
+    control_subparsers.add_parser(
+        "test", help="Run Ansible tests on the control node."
+    ).set_defaults(func=control_test)
     control_subparsers.add_parser(
         "build_image", help="Build the golden image."
     ).set_defaults(func=control_build_image)

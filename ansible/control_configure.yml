@@ -84,3 +84,14 @@
       service:
         name: dnsmasq
         state: restarted
+
+- hosts: localhost
+  connection: local
+  become: yes
+  vars_files:
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Include hardware-specific configuration roles
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ hardware_control_configure_roles | default([]) }}"

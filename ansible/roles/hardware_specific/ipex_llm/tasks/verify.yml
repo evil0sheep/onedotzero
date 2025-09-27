@@ -1,0 +1,39 @@
+---
+- name: Create temporary pytest file for verification
+  copy:
+    dest: "/tmp/test_ipex.py"
+    content: |
+      import torch
+      import intel_extension_for_pytorch as ipex
+      import os
+
+      def test_ipex_installation():
+          assert ipex.xpu.is_available() == True
+          assert ipex.xpu.device_count() == 1
+          x = torch.ones(2, 2)
+          x_xpu = x.to('xpu')
+          x_cpu = x_xpu.to('cpu')
+          assert torch.equal(x, x_cpu)
+
+- name: Run IPEX verification test
+  shell: |
+    source /opt/intel/oneapi/setvars.sh
+    /opt/venvs/onedotzero/bin/pytest /tmp/test_ipex.py
+  args:
+    executable: /bin/bash
+  register: test_output
+  ignore_errors: true
+
+- name: Display test results
+  debug:
+    var: test_output.stdout_lines
+
+- name: Fail if tests did not pass
+  fail:
+    msg: "IPEX verification tests failed. Please check the output above."
+  when: "test_output.rc != 0"
+
+- name: Clean up temporary pytest file
+  file:
+    path: "/tmp/test_ipex.py"
+    state: absent
