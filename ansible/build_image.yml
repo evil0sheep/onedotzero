@@ -100,6 +100,7 @@
     - "hardware_vars/{{ hardware_version }}.yml"
   roles:
     - chroot_config
+    - networkd_wol
   tasks:
     - name: Include hardware-specific golden image roles
       ansible.builtin.include_role:

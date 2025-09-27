@@ -1,6 +1,8 @@
 ---
 - name: Check if sycl-ls is available
-  ansible.builtin.command: which sycl-ls
+  ansible.builtin.shell: |
+    . /opt/intel/oneapi/setvars.sh --quiet;
+    which sycl-ls
   register: sycl_ls_path
   changed_when: false
   failed_when: false
@@ -13,7 +15,7 @@
 
 - name: Get SYCL device information
   ansible.builtin.shell: |
-    source /opt/intel/oneapi/setvars.sh --quiet
+    . /opt/intel/oneapi/setvars.sh --quiet;
     sycl-ls
   register: sycl_ls_output
   changed_when: false
