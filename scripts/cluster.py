@@ -7,6 +7,7 @@ import logging
 import yaml
 import time
 import jinja2
+import shlex
 
 # Configure logging
 logging.basicConfig(
@@ -108,14 +109,14 @@ def generate_inventory():
     env = jinja2.Environment()
 
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
-    rendered_ips = []
+    inventory_lines = []
     for node in compute_nodes:
         template = env.from_string(node["ip"])
         rendered_ip = template.render(ansible_vars)
-        rendered_ips.append(rendered_ip)
+        inventory_lines.append(f"{node['name']} ansible_host={rendered_ip}")
 
     inventory_content = "[compute]\n"
-    inventory_content += "\n".join(rendered_ips)
+    inventory_content += "\n".join(inventory_lines)
     inventory_content += "\n\n[compute:vars]\nansible_user=compute\n"
 
     with open(DYN_INVENTORY_PATH, "w") as f:
@@ -277,6 +278,35 @@ def compute_ssh(args):
         os.system(command)
 
 
+def compute_cmd(args):
+    """Executes a command on a compute node."""
+    node_index = args.node_index
+    try:
+        node_name = HARDWARE_CONFIG["compute_nodes"][node_index]["name"]
+    except IndexError:
+        logging.error(f"Invalid node index: {node_index}")
+        sys.exit(1)
+
+    quoted_command = shlex.quote(args.command)
+    command = (
+        f"ansible {node_name} -i {DYN_INVENTORY_RELATIVE_PATH} "
+        f"-m shell -a {quoted_command}"
+    )
+    run_command(command, remote=args.remote)
+
+
+def control_ssh(args):
+    """SSH into the control node."""
+    if not args.remote:
+        print("Already on the control node, no need to SSH.")
+        return
+
+    remote_host = HARDWARE_CONFIG.get("control_host", "control")
+    command = f"ssh -t {remote_host}"
+    print(f"Connecting to {remote_host}...")
+    os.system(command)
+
+
 def control_configure(args):
     """Configures the control node using Ansible."""
     inventory_path = os.path.join(
@@ -304,6 +334,14 @@ def control_build_image(args):
     logging.info("Golden image build complete.")
     logging.info("Fixing .ansible directory ownership...")
     run_command("sudo chown -R $USER:$USER $HOME/.ansible", remote=args.remote)
+
+
+def control_clean_image(args):
+    """Removes the golden image on the control node."""
+    logging.info("Removing golden image...")
+    command = "sudo rm -rf /srv/nfs/ubuntu_golden"
+    run_command(command, remote=True)
+    logging.info("Golden image removed.")
 
 
 def control_cmd(args):
@@ -488,6 +526,15 @@ def main():
     )
     ssh_parser.set_defaults(func=compute_ssh)
 
+    compute_cmd_parser = compute_subparsers.add_parser(
+        "cmd", help="Execute a command on a compute node."
+    )
+    compute_cmd_parser.add_argument(
+        "node_index", type=int, help="The 0-based index of the compute node."
+    )
+    compute_cmd_parser.add_argument("command", type=str, help="The command to execute.")
+    compute_cmd_parser.set_defaults(func=compute_cmd)
+
     # Control commands
     control_parser = subparsers.add_parser("control", help="Manage the control node.")
     control_subparsers = control_parser.add_subparsers(dest="action", required=True)
@@ -502,6 +549,13 @@ def main():
     )
     cmd_parser.add_argument("command", type=str, help="The command to execute.")
     cmd_parser.set_defaults(func=control_cmd)
+
+    control_subparsers.add_parser(
+        "ssh", help="SSH into the control node."
+    ).set_defaults(func=control_ssh)
+    control_subparsers.add_parser(
+        "clean_image", help="Removes the golden image on the control node."
+    ).set_defaults(func=control_clean_image)
 
     # Hardware commands
     hardware_parser = subparsers.add_parser(
