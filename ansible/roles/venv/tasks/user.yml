@@ -1,0 +1,5 @@
+---
+- name: Create the onedotzero virtual environment
+  command:
+    cmd: python3.11 -m venv /opt/venvs/onedotzero
+    creates: /opt/venvs/onedotzero/bin/pip

@@ -12,6 +12,7 @@
       ignore_errors: true
 
   roles:
+    - venv
 
   tasks:
     - name: Include hardware-specific configuration roles
