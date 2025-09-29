@@ -23,7 +23,7 @@
 - name: Install Intel oneAPI base toolkit
   ansible.builtin.apt:
     name:
-      - intel-basekit
+      - intel-basekit=2024.2.1-98
     state: present
     update_cache: yes
 
