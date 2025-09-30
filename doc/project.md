@@ -34,10 +34,10 @@ Please read each task in the todo list one-by-one and for each item think about 
   3. Make a new hardware specific ansible role attached to `compute_configure.yml` which builds and installs vLLM for intel using the following commands. Verify in a corresponding `verify.yml`by running vLLM, loading up `shuyuej/gemma-2b-it-GPTQ`, and hitting it with a test prompt. Be sure to configure it for reproducable testing (zero temperature, fixed random seed, etc)
 
   ```bash
-  source /opt/intel/oneapi/setvars.sh
-  source /opt/venvs/onedotzero/bin/activate
   git clone -b sycl_xpu https://github.com/analytics-zoo/vllm.git
   cd vllm
+  source /opt/intel/oneapi/setvars.sh
+  source /opt/venvs/onedotzero/bin/activate
   pip install --upgrade pip
   pip install -v -r requirements-xpu.txt
   VLLM_TARGET_DEVICE=xpu python setup.py install

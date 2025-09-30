@@ -26,15 +26,14 @@
       - intel-basekit=2024.2.1-98
     state: present
     update_cache: yes
-
-- name: Create oneAPI environment setup script in /etc/profile.d/
-  ansible.builtin.copy:
-    content: |
-      # Intel oneAPI environment setup
-      if [ -f /opt/intel/oneapi/setvars.sh ]; then
-          source /opt/intel/oneapi/setvars.sh --quiet
-      fi
-    dest: /etc/profile.d/intel-oneapi.sh
-    mode: "0755"
-    owner: root
-    group: root
+# - name: Create oneAPI environment setup script in /etc/profile.d/
+#   ansible.builtin.copy:
+#     content: |
+#       # Intel oneAPI environment setup
+#       if [ -f /opt/intel/oneapi/setvars.sh ]; then
+#           source /opt/intel/oneapi/setvars.sh --quiet
+#       fi
+#     dest: /etc/profile.d/intel-oneapi.sh
+#     mode: "0755"
+#     owner: root
+#     group: root

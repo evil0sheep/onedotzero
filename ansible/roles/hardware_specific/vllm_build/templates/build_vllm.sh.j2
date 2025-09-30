@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e # Exit immediately if a command exits with a non-zero status.
+
+echo "--- Sourcing Intel oneAPI environment ---"
+source /opt/intel/oneapi/setvars.sh
+
+echo "--- Sourcing onedotzero Python venv ---"
+source /opt/venvs/onedotzero/bin/activate
+
+echo "--- Upgrading pip ---"
+pip install --upgrade pip
+
+echo "--- Installing vLLM dependencies ---"
+pip install -v -r requirements-xpu.txt
+
+echo "--- Installing vLLM for XPU ---"
+VLLM_TARGET_DEVICE=xpu python setup.py install
+
+echo "--- Build script finished successfully ---"
