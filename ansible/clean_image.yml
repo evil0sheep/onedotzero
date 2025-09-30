@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  become: yes
+  name: Clean up and remove the golden image
+  tasks:
+    - name: Ensure chroot filesystems are unmounted
+      ansible.builtin.include_role:
+        name: chroot_cleanup
+
+    - name: Stop and disable the NFS server
+      ansible.builtin.service:
+        name: nfs-kernel-server
+        state: stopped
+        enabled: no
+      ignore_errors: yes # Ignore errors if the service is not found or already stopped
+
+    - name: Remove the golden image directory
+      ansible.builtin.file:
+        path: /srv/nfs/ubuntu_golden
+        state: absent

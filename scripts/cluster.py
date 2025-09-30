@@ -351,8 +351,14 @@ def control_build_image(args):
 
 def control_clean_image(args):
     """Removes the golden image on the control node."""
-    logging.info("Removing golden image...")
-    command = "sudo rm -rf /srv/nfs/ubuntu_golden"
+    logging.info("Removing golden image using ansible playbook...")
+    inventory_path = os.path.join(
+        "ansible/inventory", get_hardware_version(), "hosts.ini"
+    )
+    command = (
+        f"ansible-playbook -i {inventory_path} ansible/clean_image.yml "
+        f"--extra-vars 'hardware_version={get_hardware_version()}'"
+    )
     run_command(command, remote=True)
     logging.info("Golden image removed.")
 

@@ -11,8 +11,7 @@
       delegate_to: localhost
       ignore_errors: true
 
-  roles:
-    - venv
+  roles: []
 
   tasks:
     - name: Include hardware-specific configuration roles

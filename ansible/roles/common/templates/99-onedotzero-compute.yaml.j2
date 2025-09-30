@@ -5,3 +5,6 @@ network:
       dhcp4: no
       addresses:
         - "{{ control_node_ip }}/24"
+      nameservers:
+        addresses:
+          - 8.8.8.8

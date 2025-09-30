@@ -92,31 +92,31 @@
         ssh_key_for_chroot: "{{ ssh_public_key }}"
       changed_when: false
 
-# Play 3: Configure the golden image via chroot
+# Play 3: Configure the golden image via chroot and cleanup
 - hosts: golden_image_chroot
   become: yes
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"
-  roles:
-    - chroot_config
-    - networkd_wol
   tasks:
-    - name: Include hardware-specific golden image roles
-      ansible.builtin.include_role:
-        name: "{{ item }}"
-      loop: "{{ hardware_golden_image_roles | default([]) }}"
-
-# Play 4: Cleanup the chroot environment
-- hosts: localhost
-  connection: local
-  become: yes
-  tasks:
-    - name: Unmount pseudo-filesystems
-      mount:
-        path: "/srv/nfs/ubuntu_golden/{{ item }}"
-        state: unmounted
-      loop:
-        - proc
-        - sys
-        - dev
+    - block:
+        - name: Include chroot_config role
+          include_role:
+            name: chroot_config
+        - name: Include networkd_wol role
+          include_role:
+            name: networkd_wol
+        - name: Include venv role
+          include_role:
+            name: venv
+        - name: Include hardware-specific golden image roles
+          ansible.builtin.include_role:
+            name: "{{ item }}"
+          loop: "{{ hardware_golden_image_roles | default([]) }}"
+      always:
+        - name: Run chroot cleanup tasks on localhost
+          ansible.builtin.include_role:
+            name: chroot_cleanup
+            apply:
+              delegate_to: localhost
+              become: yes
