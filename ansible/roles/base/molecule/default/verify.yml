@@ -4,22 +4,22 @@
   become: true
   tasks:
     - name: "Check for cloud-init config file"
-      stat:
+      ansible.builtin.stat:
         path: "/etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
       register: config_file
 
     - name: "Fail if config file does not exist"
-      fail:
+      ansible.builtin.fail:
         msg: "Cloud-init config file was not created."
       when: not config_file.stat.exists
 
     - name: "Check content of cloud-init config file"
-      command: "cat /etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
+      ansible.builtin.command: "cat /etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
       register: config_content
       changed_when: false
 
     - name: "Assert that network config is disabled"
-      assert:
+      ansible.builtin.assert:
         that:
           - "'network: {config: disabled}' in config_content.stdout"
         fail_msg: "Network config was not disabled in cloud-init config."

@@ -1,7 +1,7 @@
 ---
-- hosts: localhost
+- name: Clean up and remove the golden image
+  hosts: localhost
   become: true
-  name: Clean up and remove the golden image
   tasks:
     - name: Ensure chroot filesystems are unmounted
       ansible.builtin.include_role:

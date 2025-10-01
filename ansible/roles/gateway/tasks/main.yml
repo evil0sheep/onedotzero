@@ -20,11 +20,11 @@
 
 - name: Get current iptables rules
   ansible.builtin.command: iptables-save
-  register: iptables_rules
+  register: gateway_iptables_rules
   changed_when: false
 
 - name: Save iptables rules to file
   ansible.builtin.copy:
-    content: "{{ iptables_rules.stdout }}"
+    content: "{{ gateway_iptables_rules.stdout }}"
     dest: /etc/iptables/rules.v4
     mode: "0644"
