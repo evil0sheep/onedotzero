@@ -2,5 +2,6 @@ PyYAML
 jinja2
 ansible
 ansible-lint
-molecule[docker]
+molecule
+molecule-plugins[docker]
 yamllint
