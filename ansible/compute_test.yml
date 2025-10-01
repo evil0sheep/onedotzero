@@ -1,7 +1,7 @@
 ---
 - name: Test Compute Node Configuration
   hosts: compute
-  gather_facts: yes
+  gather_facts: true
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"

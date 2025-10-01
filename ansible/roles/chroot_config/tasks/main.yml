@@ -1,6 +1,6 @@
 ---
 - name: Configure APT sources for chroot
-  copy:
+  ansible.builtin.copy:
     dest: /etc/apt/sources.list
     content: |
       deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
@@ -10,12 +10,12 @@
     mode: "0644"
 
 - name: Update apt cache and upgrade system in chroot
-  apt:
-    update_cache: yes
+  ansible.builtin.apt:
+    update_cache: true
     upgrade: dist
 
 - name: Install base packages in chroot
-  apt:
+  ansible.builtin.apt:
     name:
       - linux-image-generic
       - openssh-server
@@ -25,26 +25,26 @@
 
 # User config
 - name: Ensure root .ssh directory exists in chroot
-  file:
+  ansible.builtin.file:
     path: /root/.ssh
     state: directory
     mode: "0700"
 
 - name: Add SSH key to root user in chroot
-  copy:
+  ansible.builtin.copy:
     content: "{{ ssh_key_for_chroot }}"
     dest: /root/.ssh/authorized_keys
     mode: "0600"
 
 - name: Create compute user in chroot
-  user:
+  ansible.builtin.user:
     name: compute
     shell: /bin/bash
-    create_home: yes
+    create_home: true
     state: present
 
 - name: Ensure .ssh directory exists for compute user in chroot
-  file:
+  ansible.builtin.file:
     path: /home/compute/.ssh
     state: directory
     owner: compute
@@ -52,7 +52,7 @@
     mode: "0700"
 
 - name: Add SSH key for compute user in chroot
-  copy:
+  ansible.builtin.copy:
     content: "{{ ssh_key_for_chroot }}"
     dest: /home/compute/.ssh/authorized_keys
     owner: compute
@@ -60,32 +60,33 @@
     mode: "0600"
 
 - name: Grant passwordless sudo to compute user in chroot
-  copy:
+  ansible.builtin.copy:
     content: "compute ALL=(ALL) NOPASSWD: ALL"
     dest: /etc/sudoers.d/compute
     mode: "0440"
 
 # system config
 - name: Set hostname in chroot
-  copy:
+  ansible.builtin.copy:
     content: "compute-node"
     dest: /etc/hostname
     mode: "0644"
 
 - name: Configure overlayroot
-  copy:
+  ansible.builtin.copy:
     content: |
       overlayroot="tmpfs:swap=1,recurse=0"
     dest: /etc/overlayroot.conf
     mode: "0644"
 
 - name: Create fstab in chroot
-  copy:
+  ansible.builtin.copy:
     dest: /etc/fstab
     content: |
       proc /proc proc defaults 0 0
       sysfs /sys sysfs defaults 0 0
+    mode: "0644"
 
 - name: Update the initramfs in the chroot
-  command: "update-initramfs -u"
+  ansible.builtin.command: "update-initramfs -u"
   changed_when: false

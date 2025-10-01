@@ -1,6 +1,6 @@
 ---
 - hosts: localhost
-  become: yes
+  become: true
   name: Clean up and remove the golden image
   tasks:
     - name: Ensure chroot filesystems are unmounted
@@ -11,8 +11,11 @@
       ansible.builtin.service:
         name: nfs-kernel-server
         state: stopped
-        enabled: no
-      ignore_errors: yes # Ignore errors if the service is not found or already stopped
+        enabled: false
+      register: service_status
+      failed_when:
+        - service_status.failed
+        - "'not found' not in service_status.msg | lower"
 
     - name: Remove the golden image directory
       ansible.builtin.file:

@@ -1,19 +1,20 @@
 ---
 # Play 1: Run tasks as the ansible_user
-- hosts: localhost
+- name: Configure local SSH client for compute nodes
+  hosts: localhost
   connection: local
-  become: no
+  become: false
   vars_files:
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"
   tasks:
     - name: Configure SSH client for compute nodes
-      blockinfile:
+      ansible.builtin.blockinfile:
         path: "{{ ansible_user_dir }}/.ssh/config"
-        create: yes
+        create: true
         owner: "{{ ansible_user_id }}"
         group: "{{ ansible_user_gid }}"
-        mode: 0600
+        mode: "0600"
         block: |
           {% for node in compute_nodes %}
           Host {{ node.name }}
@@ -24,21 +25,22 @@
           {% endfor %}
 
 # Play 2: Run tasks as root
-- hosts: localhost
+- name: Configure base system and network gateway
+  hosts: localhost
   connection: local
-  become: yes
+  become: true
   vars_files:
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"
   pre_tasks:
     - name: Check for passwordless sudo
-      command: sudo -n true
+      ansible.builtin.command: sudo -n true
       register: sudo_check
       ignore_errors: true
       changed_when: false
 
     - name: Fail if passwordless sudo is not configured
-      fail:
+      ansible.builtin.fail:
         msg: |
           Passwordless sudo is not configured for the current user.
           Please configure it by running 'sudo visudo' on the control node
@@ -48,23 +50,29 @@
       when: sudo_check.rc != 0
 
     - name: Install Ansible
-      apt:
+      ansible.builtin.apt:
         name: ansible
         state: present
-        update_cache: yes
+        update_cache: true
+
+    - name: Install community.general Ansible collection
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install community.general
+        creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/general"
   roles:
     - base
     - gateway
 
-- hosts: localhost
+- name: Configure NFS, PXE, and DNS services
+  hosts: localhost
   connection: local
-  become: yes
+  become: true
   vars_files:
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"
   tasks:
     - name: Refresh network facts
-      setup:
+      ansible.builtin.setup:
         filter: "ansible_network_resources"
   roles:
     - nfs_server
@@ -73,7 +81,7 @@
 
   post_tasks:
     - name: Ensure remote directory exists
-      file:
+      ansible.builtin.file:
         path: "{{ ansible_user_dir }}/remote/onedotzero"
         state: directory
         owner: "{{ ansible_user_id }}"
@@ -81,13 +89,14 @@
         mode: "0755"
 
     - name: Restart dnsmasq
-      service:
+      ansible.builtin.service:
         name: dnsmasq
         state: restarted
 
-- hosts: localhost
+- name: Apply hardware-specific configurations
+  hosts: localhost
   connection: local
-  become: yes
+  become: true
   vars_files:
     - "hardware_vars/{{ hardware_version }}.yml"
   tasks:

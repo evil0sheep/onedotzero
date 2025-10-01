@@ -1,12 +1,13 @@
 ---
-- hosts: localhost
+- name: Test control node configuration
+  hosts: localhost
   connection: local
-  become: yes
+  become: true
   vars_files:
     - "hardware_vars/{{ hardware_version }}.yml"
 
   tasks:
     - name: Run IPEX LLM verification
-      include_role:
-        name: hardware_specific/ipex_llm
+      ansible.builtin.include_role:
+        name: ipex_llm
         tasks_from: verify.yml

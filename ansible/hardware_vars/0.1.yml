@@ -6,24 +6,20 @@ arch: "amd64"
 debootstrap_arch: "amd64"
 
 compute_nodes:
-  - {
-      mac: "d8:bb:c1:9b:85:c7",
-      ip: "{{ compute_subnet }}.100",
-      name: "compute0",
-    }
-  - {
-      mac: "d8:bb:c1:9b:84:8b",
-      ip: "{{ compute_subnet }}.101",
-      name: "compute1",
-    }
+  - mac: "d8:bb:c1:9b:85:c7"
+    ip: "{{ compute_subnet }}.100"
+    name: "compute0"
+  - mac: "d8:bb:c1:9b:84:8b"
+    ip: "{{ compute_subnet }}.101"
+    name: "compute1"
 
 hardware_compute_configure_roles: []
 
 hardware_control_configure_roles: []
 
-hardware_golden_image_roles:
-  - "hardware_specific/intel_arc_drivers"
-  - "hardware_specific/intel_oneapi"
+hardware_golden_image_roles: []
+  # - "hardware_specific/intel_arc_drivers"
+  # - "hardware_specific/intel_oneapi"
 
 hardware_compute_test_roles:
   - "hardware_specific/ipex_llm"

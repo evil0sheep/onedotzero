@@ -1,15 +1,17 @@
-- hosts: compute
+- name: Configure compute nodes
+  hosts: compute
   connection: ssh
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "hardware_vars/{{ hardware_version }}.yml"
 
   pre_tasks:
     - name: Remove old SSH host key for compute node
-      command: "ssh-keygen -R {{ inventory_hostname }}"
+      ansible.builtin.known_hosts:
+        name: "{{ inventory_hostname }}"
+        state: absent
       delegate_to: localhost
-      ignore_errors: true
 
   roles: []
 

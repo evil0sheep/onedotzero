@@ -1,12 +1,13 @@
-- hosts: localhost
+- name: Get and print the broadcast address for the compute interface
+  hosts: localhost
   connection: local
   vars_files:
     - vars/main.yml
   tasks:
     - name: Get interface facts
-      setup:
+      ansible.builtin.setup:
         filter: "ansible_facts['{{ compute_interface }}']"
 
     - name: Print broadcast address
-      debug:
+      ansible.builtin.debug:
         msg: "{{ ansible_facts[compute_interface]['ipv4']['broadcast'] }}"

@@ -1,11 +1,13 @@
-- hosts: control
-  become: yes
+- name: Wake up all compute nodes
+  hosts: control
+  become: true
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"
   tasks:
     - name: Send Wake-on-LAN packet to all compute nodes
-      command: "wakeonlan -i {{ broadcast_address }} {{ item.mac }}"
+      ansible.builtin.command: "wakeonlan -i {{ broadcast_address }} {{ item.mac }}"
       loop: "{{ compute_nodes }}"
       loop_control:
         label: "{{ item.name }}"
+      changed_when: false

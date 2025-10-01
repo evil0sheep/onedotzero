@@ -1,5 +1,5 @@
 ---
 - name: Create the onedotzero virtual environment
-  command:
+  ansible.builtin.command:
     cmd: python3.12 -m venv /opt/venvs/onedotzero
     creates: /opt/venvs/onedotzero/bin/pip

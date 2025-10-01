@@ -1,5 +1,5 @@
 - name: Enable Wake-on-LAN for all ethernet interfaces
-  copy:
+  ansible.builtin.copy:
     dest: /etc/systemd/network/99-wol.link
     content: |
       [Match]
@@ -7,3 +7,4 @@
 
       [Link]
       WakeOnLan=magic
+    mode: "0644"

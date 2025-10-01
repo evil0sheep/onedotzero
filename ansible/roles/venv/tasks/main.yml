@@ -3,11 +3,11 @@
   ansible.builtin.include_tasks:
     file: root.yml
     apply:
-      become: yes
+      become: true
 
 - name: Run venv user tasks
   ansible.builtin.include_tasks:
     file: user.yml
     apply:
-      become: yes
+      become: true
       become_user: compute

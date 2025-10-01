@@ -1,11 +1,11 @@
 ---
 - name: Update apt cache
-  apt:
-    update_cache: yes
+  ansible.builtin.apt:
+    update_cache: true
   changed_when: false
 
 - name: Install required packages
-  apt:
+  ansible.builtin.apt:
     name:
       - nginx
       - dnsmasq
@@ -13,10 +13,11 @@
       - pxelinux
       - p7zip-full
       - grub-efi-amd64-bin
+      - ansible-lint
     state: present
 
 - name: Create TFTP and HTTP directories
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0755"
@@ -26,9 +27,9 @@
     - /srv/http/ubuntu_golden
 
 - name: Configure SSH client for compute nodes
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: "{{ ansible_env.HOME }}/.ssh/config"
-    create: yes
+    create: true
     mode: "0600"
     block: |
       Host {{ compute_subnet }}.*
@@ -36,8 +37,8 @@
           UserKnownHostsFile /dev/null
 
 - name: Configure compute interface IP address
-  template:
+  ansible.builtin.template:
     src: 99-onedotzero-compute.yaml.j2
     dest: /etc/netplan/99-onedotzero-compute.yaml
     mode: "0644"
-  notify: apply netplan
+  notify: Apply netplan

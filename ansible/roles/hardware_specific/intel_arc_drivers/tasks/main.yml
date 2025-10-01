@@ -5,7 +5,7 @@
       - gpg-agent
       - wget
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Get Intel graphics GPG key
   ansible.builtin.get_url:
@@ -32,10 +32,10 @@
       - libze-dev
       - intel-ocloc
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Add compute user to render group
   ansible.builtin.user:
     name: compute
     groups: render
-    append: yes
+    append: true

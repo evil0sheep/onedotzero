@@ -1,45 +1,45 @@
 ---
 - name: Ensure dnsmasq is stopped before configuration
-  service:
+  ansible.builtin.service:
     name: dnsmasq
     state: stopped
 
-- name: Check for port conflicts by non-dnsmasq processes
-  shell: "ss -tlpn | grep -E ':(53|67|69) ' | grep -v dnsmasq"
-  register: port_conflict_check
-  failed_when: false
-  changed_when: false
+- name: Gather facts about listening ports
+  community.general.listen_ports_facts:
 
-- name: Fail if ports are in use by non-dnsmasq processes
-  fail:
-    msg: "One or more required ports (53, 67, 69) are in use by other processes. Please free them and rerun."
-  when: port_conflict_check.stdout != ""
+- name: Fail if conflicting process is using a required port
+  ansible.builtin.fail:
+    msg: "Port conflict detected on port {{ item.port }} by process {{ item.name }}"
+  loop: "{{ ansible_facts.tcp_listen + ansible_facts.udp_listen }}"
+  when:
+    - item.port in [53, 67, 69]
+    - item.name != 'dnsmasq'
 
 - name: Configure dnsmasq for onedotzero
-  template:
+  ansible.builtin.template:
     src: dnsmasq.conf.j2
     dest: /etc/dnsmasq.d/10-onedotzero.conf
     mode: "0644"
-  notify: restart dnsmasq
+  notify: Restart dnsmasq
 
 - name: Create systemd override directory for dnsmasq
-  file:
+  ansible.builtin.file:
     path: /etc/systemd/system/dnsmasq.service.d
     state: directory
     mode: "0755"
 
 - name: Add systemd override for dnsmasq
-  copy:
+  ansible.builtin.copy:
     content: |
       [Unit]
       After=network-online.target
       Wants=network-online.target
     dest: /etc/systemd/system/dnsmasq.service.d/override.conf
     mode: "0644"
-  notify: restart dnsmasq
+  notify: Restart dnsmasq
 
 - name: Ensure dnsmasq is running and enabled
-  service:
+  ansible.builtin.service:
     name: dnsmasq
     state: started
-    enabled: yes
+    enabled: true

@@ -1,0 +1,8 @@
+---
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - vim
+      - pciutils
+    state: present

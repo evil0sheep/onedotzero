@@ -1,74 +1,84 @@
 ---
 - name: Clean existing TFTP directory
-  file:
+  ansible.builtin.file:
     path: /srv/tftp
     state: absent
 
 - name: Recreate TFTP directory
-  file:
+  ansible.builtin.file:
     path: /srv/tftp
     state: directory
     mode: "0755"
 
 - name: Create GRUB network boot environment
-  command: grub-mknetdir --net-directory=/srv/tftp --subdir=boot/grub
+  ansible.builtin.command: grub-mknetdir --net-directory=/srv/tftp --subdir=boot/grub
   args:
     creates: /srv/tftp/boot/grub/x86_64-efi/core.efi
 
-- name: Find the latest kernel image in the NFS root
-  shell: "ls -t /srv/nfs/ubuntu_golden/boot/vmlinuz-* | head -n 1"
-  register: latest_kernel
-  changed_when: false
+- name: Find all kernel images in the NFS root
+  ansible.builtin.find:
+    paths: /srv/nfs/ubuntu_golden/boot
+    patterns: "vmlinuz-*"
+  register: kernel_files
 
-- name: Find the latest initrd image in the NFS root
-  shell: "ls -t /srv/nfs/ubuntu_golden/boot/initrd.img-* | head -n 1"
-  register: latest_initrd
-  changed_when: false
-
-- name: Fail if kernel is not found
-  fail:
+- name: Fail if no kernel is found
+  ansible.builtin.fail:
     msg: "Could not find a kernel image in /srv/nfs/ubuntu_golden/boot"
-  when: latest_kernel.stdout == ""
+  when: kernel_files.files | length == 0
 
-- name: Fail if initrd is not found
-  fail:
+- name: Set latest_kernel_path fact
+  ansible.builtin.set_fact:
+    latest_kernel_path: "{{ (kernel_files.files | sort(attribute='mtime'))[-1].path }}"
+
+- name: Find all initrd images in the NFS root
+  ansible.builtin.find:
+    paths: /srv/nfs/ubuntu_golden/boot
+    patterns: "initrd.img-*"
+  register: initrd_files
+
+- name: Fail if no initrd is found
+  ansible.builtin.fail:
     msg: "Could not find an initrd image in /srv/nfs/ubuntu_golden/boot"
-  when: latest_initrd.stdout == ""
+  when: initrd_files.files | length == 0
+
+- name: Set latest_initrd_path fact
+  ansible.builtin.set_fact:
+    latest_initrd_path: "{{ (initrd_files.files | sort(attribute='mtime'))[-1].path }}"
 
 - name: Copy kernel and initrd from NFS root to TFTP directory
-  copy:
+  ansible.builtin.copy:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
-    remote_src: yes
+    remote_src: true
     mode: "0644"
   loop:
-    - { src: "{{ latest_kernel.stdout }}", dest: "/srv/tftp/boot/grub/vmlinuz" }
-    - { src: "{{ latest_initrd.stdout }}", dest: "/srv/tftp/boot/grub/initrd" }
+    - { src: "{{ latest_kernel_path }}", dest: "/srv/tftp/boot/grub/vmlinuz" }
+    - { src: "{{ latest_initrd_path }}", dest: "/srv/tftp/boot/grub/initrd" }
 
 - name: Check for SSH public key on control node
-  stat:
+  ansible.builtin.stat:
     path: "~/.ssh/id_ed25519.pub"
   register: ssh_key_file
-  become: no
+  become: false
 
 - name: Fail if SSH key is not found on control node
-  fail:
+  ansible.builtin.fail:
     msg: "SSH public key not found at ~/.ssh/id_ed25519.pub on the control node. Please create one."
   when: not ssh_key_file.stat.exists
-  become: no
+  become: false
 
 - name: Read SSH public key from control node
-  slurp:
+  ansible.builtin.slurp:
     src: "~/.ssh/id_ed25519.pub"
   register: ssh_key_content
-  become: no
+  become: false
 
 - name: Set ssh_key fact
-  set_fact:
+  ansible.builtin.set_fact:
     ssh_authorized_key: "{{ ssh_key_content.content | b64decode }}"
 
 - name: Create GRUB boot menu
-  template:
+  ansible.builtin.template:
     src: grub.cfg.j2
     dest: /srv/tftp/boot/grub/grub.cfg
     mode: "0644"

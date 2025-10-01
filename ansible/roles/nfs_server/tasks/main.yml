@@ -1,28 +1,29 @@
 ---
 - name: Install NFS server dependencies
-  apt:
+  ansible.builtin.apt:
     name:
       - nfs-kernel-server
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Create NFS root directory
-  file:
+  ansible.builtin.file:
     path: /srv/nfs/ubuntu_golden
     state: directory
     mode: "0755"
 
 - name: Configure NFS exports
-  template:
+  ansible.builtin.template:
     src: exports.j2
     dest: /etc/exports
+    mode: "0644"
 
 - name: Re-export NFS shares
-  command: exportfs -ra
+  ansible.builtin.command: exportfs -ra
   changed_when: false
 
 - name: Ensure nfs-kernel-server is started and enabled
-  service:
+  ansible.builtin.service:
     name: nfs-kernel-server
     state: started
-    enabled: yes
+    enabled: true
