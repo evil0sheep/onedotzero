@@ -7,9 +7,9 @@
 
 - name: Clone vLLM repository to a specific version
   ansible.builtin.git:
-    repo: 'https://github.com/analytics-zoo/vllm.git'
+    repo: "https://github.com/vllm-project/vllm.git"
     dest: /usr/local/src/vllm
-    version: 6cf66faca
+    version: 96ebcaa3ad7b09dfb911bee9a8e904612868b12c
     force: yes
     update: no # Ensures we stay at the specified commit
 
@@ -17,11 +17,11 @@
   ansible.builtin.template:
     src: build_vllm.sh.j2
     dest: /tmp/build_vllm.sh
-    mode: '0755'
+    mode: "0755"
 
 - name: Execute vLLM build script
   ansible.builtin.command:
     cmd: /tmp/build_vllm.sh
     chdir: /usr/local/src/vllm
-    creates: "/opt/venvs/onedotzero/lib/python3.11/site-packages/vllm"
+    creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/vllm"
   become: yes # The installation needs to write to the venv owned by root

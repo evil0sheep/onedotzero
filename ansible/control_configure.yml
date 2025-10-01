@@ -53,7 +53,7 @@
         state: present
         update_cache: yes
   roles:
-    - common
+    - base
     - gateway
 
 - hosts: localhost

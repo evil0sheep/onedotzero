@@ -109,6 +109,9 @@
         - name: Include venv role
           include_role:
             name: venv
+        - name: Include vllm_source role
+          include_role:
+            name: vllm_source
         - name: Include hardware-specific golden image roles
           ansible.builtin.include_role:
             name: "{{ item }}"

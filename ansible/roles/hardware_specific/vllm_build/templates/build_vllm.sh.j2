@@ -11,7 +11,7 @@ echo "--- Upgrading pip ---"
 pip install --upgrade pip
 
 echo "--- Installing vLLM dependencies ---"
-pip install -v -r requirements-xpu.txt
+pip install -v -r requirements/xpu.txt
 
 echo "--- Installing vLLM for XPU ---"
 VLLM_TARGET_DEVICE=xpu python setup.py install

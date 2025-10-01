@@ -17,8 +17,7 @@ compute_nodes:
       name: "compute1",
     }
 
-hardware_compute_configure_roles:
-  - "hardware_specific/vllm_build"
+hardware_compute_configure_roles: []
 
 hardware_control_configure_roles: []
 

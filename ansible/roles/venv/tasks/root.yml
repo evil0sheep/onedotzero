@@ -16,9 +16,9 @@
     state: present
     update_cache: yes
 
-- name: Install python3.11-venv package
+- name: Install python3.12-venv package
   apt:
-    name: python3.11-venv
+    name: python3.12-venv
     state: present
     update_cache: yes
 
