@@ -4,6 +4,22 @@ import subprocess
 import sys
 import os
 import logging
+
+# --- Virtual Environment Check ---
+# Ensure the script is running in a venv.
+if sys.prefix == sys.base_prefix:
+    print(
+        "ERROR: This script must be run in a Python virtual environment.",
+        file=sys.stderr,
+    )
+    print(
+        "Please run './scripts/init.sh' to create one, then activate it with:",
+        file=sys.stderr,
+    )
+    print("source .venv/bin/activate", file=sys.stderr)
+    sys.exit(1)
+# --- End Check ---
+
 import yaml
 import time
 import jinja2
@@ -610,7 +626,7 @@ def main():
         if args.remote:
             remote_host = HARDWARE_CONFIG.get("control_host", "control")
             # Rsync is always checked because if it fails, nothing else will work.
-            rsync_cmd = f"rsync -avz --delete --exclude='.git' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
+            rsync_cmd = f"rsync -avz --delete --exclude='.git' --exclude='.venv' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
             logging.debug(
                 f"Running remote command, first syncing CWD with '{rsync_cmd}'"
             )

@@ -1,0 +1,26 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: "Check for cloud-init config file"
+      stat:
+        path: "/etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
+      register: config_file
+
+    - name: "Fail if config file does not exist"
+      fail:
+        msg: "Cloud-init config file was not created."
+      when: not config_file.stat.exists
+
+    - name: "Check content of cloud-init config file"
+      command: "cat /etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
+      register: config_content
+      changed_when: false
+
+    - name: "Assert that network config is disabled"
+      assert:
+        that:
+          - "'network: {config: disabled}' in config_content.stdout"
+        fail_msg: "Network config was not disabled in cloud-init config."
+        success_msg: "Cloud-init config is correct."
