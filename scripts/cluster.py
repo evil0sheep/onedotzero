@@ -616,7 +616,6 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-
     if args.command not in ["doc", "hardware"]:
         version = get_hardware_version()
         load_hardware_config(version)
