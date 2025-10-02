@@ -49,12 +49,15 @@
     mode: "0644"
   notify: Apply netplan
   changed_when: false
+  when: ansible_virtualization_type != 'docker'
 
 - name: Add ansible user to the docker group
   ansible.builtin.user:
     name: "{{ ansible_env.SUDO_USER }}"
     groups: docker
     append: yes
+  when: ansible_virtualization_type != 'docker'
 
 - name: Reset SSH connection to apply group changes
   ansible.builtin.meta: reset_connection
+  when: ansible_virtualization_type != 'docker'

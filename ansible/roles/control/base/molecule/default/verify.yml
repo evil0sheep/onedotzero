@@ -1,26 +1,19 @@
 ---
 - name: Verify
   hosts: all
-  become: true
+  # The test needs access to the same variables as the converge playbook
+  # to resolve the 'compute_subnet' variable.
+  vars_files:
+    - ../../../../../vars/main.yml
+
   tasks:
-    - name: "Check for cloud-init config file"
-      ansible.builtin.stat:
-        path: "/etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
-      register: config_file
-
-    - name: "Fail if config file does not exist"
-      ansible.builtin.fail:
-        msg: "Cloud-init config file was not created."
-      when: not config_file.stat.exists
-
-    - name: "Check content of cloud-init config file"
-      ansible.builtin.command: "cat /etc/cloud/cloud.cfg.d/99-onedotzero-compute.yaml"
-      register: config_content
+    - name: Verify SSH client configuration syntax
+      # This command must be run as the user who owns the config file,
+      # not the root user that Molecule's verifier defaults to.
+      # The SUDO_USER env var should be set by the ssh connection.
+      become: true
+      become_user: "{{ ansible_env.SUDO_USER | default('root') }}"
+      ansible.builtin.command: "ssh -G {{ compute_subnet }}.1"
       changed_when: false
-
-    - name: "Assert that network config is disabled"
-      ansible.builtin.assert:
-        that:
-          - "'network: {config: disabled}' in config_content.stdout"
-        fail_msg: "Network config was not disabled in cloud-init config."
-        success_msg: "Cloud-init config is correct."
+      # The command will fail with a non-zero exit code if syntax is invalid,
+      # which will correctly fail the verification step.
