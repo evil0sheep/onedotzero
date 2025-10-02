@@ -82,7 +82,7 @@ def run_command(
     if remote:
         command = command.replace("'", "'\\''")
         # The `exec` command ensures that ssh exits with the code of the remote command.
-        cmd_to_run = f"ssh {remote_host} 'cd {REMOTE_DIR} && exec {command}'"
+        cmd_to_run = f"ssh {remote_host} 'cd {REMOTE_DIR} && {command}'"
     else:
         cmd_to_run = command
 
@@ -384,6 +384,32 @@ def control_cmd(args):
     run_command(args.command, remote=True)
 
 
+def ansible_lint(args):
+    """Lints all ansible files."""
+    logging.info("Linting all ansible files...")
+    command = "source ~/venvs/onedotzero/bin/activate && ansible-lint"
+    run_command(command, remote=True)
+    logging.info("Ansible linting complete.")
+
+
+def ansible_test(args):
+    """Tests an ansible role using molecule."""
+    role_path = f"ansible/roles/{args.role}"
+    logging.info(f"Testing ansible role: {args.role}")
+
+    # Check if the role directory exists on the remote
+    try:
+        run_command(f"test -d {role_path}", remote=True, capture_output=True)
+    except subprocess.CalledProcessError:
+        logging.error(f"Role '{args.role}' not found at '{role_path}'.")
+        logging.error("Please specify the role path relative to 'ansible/roles/'. For example: 'control/base'")
+        sys.exit(1)
+
+    command = f"source ~/venvs/onedotzero/bin/activate && cd {role_path} && molecule test"
+    run_command(command, remote=True)
+    logging.info(f"Molecule test for role '{args.role}' complete.")
+
+
 def cluster_configure(args):
     """Configures the entire cluster from scratch."""
     logging.info("--- Starting Full Cluster Configuration ---")
@@ -594,6 +620,18 @@ def main():
     control_subparsers.add_parser(
         "clean_image", help="Removes the golden image on the control node."
     ).set_defaults(func=control_clean_image)
+
+    # Ansible commands
+    ansible_parser = subparsers.add_parser("ansible", help="Manage ansible content.")
+    ansible_subparsers = ansible_parser.add_subparsers(dest="action", required=True)
+    ansible_subparsers.add_parser(
+        "lint", help="Lint all ansible files."
+    ).set_defaults(func=ansible_lint)
+    test_parser = ansible_subparsers.add_parser(
+        "test", help="Test an ansible role using molecule."
+    )
+    test_parser.add_argument("role", type=str, help="The role to test (e.g., control/base).")
+    test_parser.set_defaults(func=ansible_test)
 
     # Hardware commands
     hardware_parser = subparsers.add_parser(

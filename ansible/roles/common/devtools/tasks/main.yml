@@ -1,8 +1,11 @@
 ---
-- name: Install required packages
+- name: Install development tooling packages
   ansible.builtin.apt:
     name:
+      - build-essential
       - git
       - vim
       - pciutils
+      - python3-pip
+      - python3-venv
     state: present

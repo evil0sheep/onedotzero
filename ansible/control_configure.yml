@@ -60,6 +60,7 @@
         cmd: ansible-galaxy collection install community.general
         creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/general"
   roles:
+    - devtools
     - base
     - gateway
 
@@ -104,3 +105,10 @@
       ansible.builtin.include_role:
         name: "{{ item }}"
       loop: "{{ hardware_control_configure_roles | default([]) }}"
+
+- name: Install and configure python tooling
+  hosts: localhost
+  connection: local
+  become: false
+  roles:
+    - python_tools
