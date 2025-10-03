@@ -1,4 +1,18 @@
 ---
+- name: Gather network facts
+  ansible.builtin.setup:
+    gather_subset:
+      - network
+
+- name: DEBUG - List all available interfaces
+  ansible.builtin.debug:
+    var: ansible_facts.interfaces
+
+- name: DEBUG - Log all interfaces and their IPv4 addresses
+  ansible.builtin.debug:
+    msg: "Interface: {{ item }}, IPv4: {{ ansible_facts[item]['ipv4']['address'] | default('N/A') }}"
+  loop: "{{ ansible_facts.interfaces }}"
+
 - name: Ensure dnsmasq is stopped before configuration
   ansible.builtin.service:
     name: dnsmasq
@@ -43,3 +57,34 @@
     name: dnsmasq
     state: started
     enabled: true
+  register: dnsmasq_service_status
+  ignore_errors: true
+
+- name: Show dnsmasq status if service failed to start
+  when: dnsmasq_service_status.failed
+  ansible.builtin.command: "systemctl status dnsmasq.service"
+  register: systemctl_status
+  changed_when: false
+
+- name: Show dnsmasq journal if service failed to start
+  when: dnsmasq_service_status.failed
+  ansible.builtin.command: "journalctl -xeu dnsmasq.service"
+  register: journalctl_output
+  changed_when: false
+
+- name: Display service failure logs
+  when: dnsmasq_service_status.failed
+  ansible.builtin.debug:
+    msg: |
+      Dnsmasq service failed to start.
+      Systemd Status:
+      {{ systemctl_status.stdout }}
+      {{ systemctl_status.stderr }}
+      Journalctl Output:
+      {{ journalctl_output.stdout }}
+      {{ journalctl_output.stderr }}
+
+- name: Fail playbook if dnsmasq did not start
+  when: dnsmasq_service_status.failed
+  ansible.builtin.fail:
+    msg: "dnsmasq service failed to start. See logs above for details."

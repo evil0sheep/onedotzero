@@ -1,0 +1,42 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: false
+
+- name: Provision control node
+  import_playbook: ../../../../control_configure.yml
+  vars:
+    hardware_version: "netboot_e2e_test"
+    target_host: "control-node"
+
+- name: Build image on control node
+  import_playbook: ../../../../build_image.yml
+  vars:
+    hardware_version: "netboot_e2e_test"
+    target_host: "control-node"
+
+- name: Configure compute node
+  hosts: compute-node
+  gather_facts: true
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Ensure NFS client is installed
+      ansible.builtin.apt:
+        name: nfs-common
+        state: present
+        update_cache: true
+
+    - name: Create mount point for NFS root
+      ansible.builtin.file:
+        path: /mnt/nfs_root
+        state: directory
+        mode: "0755"
+
+    - name: Mount the NFS share from the control node
+      ansible.builtin.mount:
+        src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
+        path: /mnt/nfs_root
+        fstype: nfs
+        opts: "rw,sync"
+        state: mounted

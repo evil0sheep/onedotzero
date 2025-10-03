@@ -1,0 +1,5 @@
+---
+provisioner:
+  name: ansible
+  roles_path:
+    - ansible/roles

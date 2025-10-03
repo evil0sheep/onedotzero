@@ -1,0 +1,5 @@
+---
+# Global Variable Overrides for Molecule E2E Test
+
+compute_subnet: 192.168.56
+control_node_ip: "{{ compute_subnet }}.10"

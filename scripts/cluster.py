@@ -393,21 +393,65 @@ def ansible_lint(args):
 
 
 def ansible_test(args):
-    """Tests an ansible role using molecule."""
-    role_path = f"ansible/roles/{args.role}"
-    logging.info(f"Testing ansible role: {args.role}")
+    """Tests an Ansible role or scenario using Molecule."""
+    test_name = args.test_name
+    logging.info(f"Searching for Molecule test: {test_name}")
 
-    # Check if the role directory exists on the remote
-    try:
-        run_command(f"test -d {role_path}", remote=True, capture_output=True)
-    except subprocess.CalledProcessError:
-        logging.error(f"Role '{args.role}' not found at '{role_path}'.")
-        logging.error("Please specify the role path relative to 'ansible/roles/'. For example: 'control/base'")
+    # Define remote search paths relative to the remote project root
+    remote_project_dir = os.path.join(REMOTE_DIR, "ansible")
+    search_paths = [
+        os.path.join(remote_project_dir, "tests"),
+        os.path.join(remote_project_dir, "roles"),
+    ]
+
+    target_path = None
+    for base_path in search_paths:
+        potential_path = os.path.join(base_path, test_name)
+        try:
+            # Check if the directory exists on the remote
+            run_command(f"test -d {potential_path}", remote=True, capture_output=True)
+            target_path = potential_path
+            logging.info(f"Found test at remote path: {target_path}")
+            break
+        except subprocess.CalledProcessError:
+            continue
+
+    if not target_path:
+        logging.error(f"Molecule test '{test_name}' not found on the remote.")
+        logging.error("Searched in:")
+        for path in search_paths:
+            logging.error(f"  - {os.path.join(path, test_name)}")
         sys.exit(1)
 
-    command = f"source ~/venvs/onedotzero/bin/activate && cd {role_path} && molecule test"
+    ## some kind of weird bug in molecule makes it so that the vagrant playbooks cant
+    # find the vagrant plugin and so the path has to be manually specified. This seems
+    # super broken and bad to me but i couldnt figure it out so instead we do this weird workaround
+    #
+    # Define the path to the custom modules within the remote venv
+    remote_venv_dir = "~/venvs/onedotzero"
+    module_path = f"{remote_venv_dir}/lib/python*/site-packages/molecule_vagrant/modules"
+
+    # 1. Find the exact module path on the remote machine by searching for the 'modules' directory.
+    find_cmd = "find ~/venvs/onedotzero/lib/python*/site-packages/molecule_vagrant -name 'modules' -type d"
+    proc = run_command(find_cmd, remote=True, capture_output=True)
+
+    # Take only the first line of output to be safe.
+    module_path = proc.stdout.strip().splitlines()[0] if proc.stdout.strip() else None
+
+    if not module_path:
+        logging.error("Could not find the molecule-vagrant module path on the remote.")
+        sys.exit(1)
+
+    # 2. Build and run the final command, exporting the discovered path.
+    command = (
+        f"source ~/venvs/onedotzero/bin/activate && "
+        f"cd {target_path} && "
+        f"export ANSIBLE_LIBRARY='{module_path}' && "
+        f"molecule test"
+    )
+
     run_command(command, remote=True)
-    logging.info(f"Molecule test for role '{args.role}' complete.")
+    logging.info(f"Molecule test for '{test_name}' complete.")
 
 
 def cluster_configure(args):
@@ -628,9 +672,9 @@ def main():
         "lint", help="Lint all ansible files."
     ).set_defaults(func=ansible_lint)
     test_parser = ansible_subparsers.add_parser(
-        "test", help="Test an ansible role using molecule."
+        "test", help="Test an ansible role or scenario using molecule."
     )
-    test_parser.add_argument("role", type=str, help="The role to test (e.g., control/base).")
+    test_parser.add_argument("test_name", type=str, help="The test to run (e.g., 'e2e' or 'control/base').")
     test_parser.set_defaults(func=ansible_test)
 
     # Hardware commands

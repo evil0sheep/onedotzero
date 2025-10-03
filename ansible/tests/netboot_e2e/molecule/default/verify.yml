@@ -1,0 +1,51 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+
+- name: Verify control node services
+  hosts: control-node
+  gather_facts: false
+  tasks:
+    - name: Check that dnsmasq is running
+      ansible.builtin.service:
+        name: dnsmasq
+        state: started
+        enabled: true
+      check_mode: true
+
+    - name: Check that nfs-server is running
+      ansible.builtin.service:
+        name: nfs-kernel-server
+        state: started
+        enabled: true
+      check_mode: true
+
+    - name: Check /etc/exports for the correct export
+      ansible.builtin.lineinfile:
+        path: /etc/exports
+        line: "/srv/nfs/ubuntu_golden {{ compute_subnet }}.0/24(ro,sync,no_subtree_check,no_root_squash)"
+        state: present
+      check_mode: true
+
+- name: Verify compute node configuration
+  hosts: compute-node
+  gather_facts: true
+  tasks:
+    - name: Check that the NFS share is mounted
+      ansible.posix.mount:
+        path: /mnt/nfs_root
+        src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
+        fstype: nfs
+        state: mounted
+      check_mode: true
+
+    - name: Resolve control-node hostname
+      ansible.builtin.command: "getent hosts control-node"
+      changed_when: false
+      register: getent_output
+
+    - name: Assert that control-node resolves correctly
+      ansible.builtin.assert:
+        that:
+          - "'192.168.200.10' in getent_output.stdout"

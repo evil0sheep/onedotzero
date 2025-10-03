@@ -1,0 +1,62 @@
+---
+- name: Install prerequisites for adding apt repositories
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: true
+
+- name: Get HashiCorp GPG key
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /usr/share/keyrings/hashicorp-archive-keyring.key
+    mode: "0644"
+    force: true
+
+- name: Add HashiCorp repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.key] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: present
+    filename: hashicorp
+    update_cache: true
+
+- name: Install Vagrant and VirtualBox
+  ansible.builtin.apt:
+    name:
+      - vagrant
+      - virtualbox
+    state: present
+    update_cache: true
+
+- name: Add ansible user to the vboxusers group
+  ansible.builtin.user:
+    name: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    groups: vboxusers
+    append: yes
+  when: ansible_virtualization_type != 'docker'
+
+- name: Install Docker
+  ansible.builtin.apt:
+    name: docker.io
+    state: present
+
+- name: Ensure docker daemon is running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add ansible user to the docker group
+  ansible.builtin.user:
+    name: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    groups: docker
+    append: yes
+  when: ansible_virtualization_type != 'docker'
+
+- name: Reset SSH connection to apply group changes
+  ansible.builtin.meta: reset_connection
+  when: ansible_virtualization_type != 'docker'

@@ -1,0 +1,20 @@
+---
+# Hardware Vars for Molecule End-to-End Test Environment
+
+# Define the control node's hostname for this environment
+control_host: "control-node"
+
+# Define the network interface on the control node that connects to the compute nodes.
+compute_interface: "eth1"
+
+# Define the list of compute nodes for the test environment.
+compute_nodes:
+  - mac: "08:00:27:00:00:01" # Dummy MAC for dnsmasq config
+    ip: "{{ compute_subnet }}.100"
+    name: "compute-node"
+
+# Ensure no hardware-specific roles are run in this generic virtual environment.
+hardware_compute_configure_roles: []
+hardware_control_configure_roles: []
+hardware_golden_image_roles: []
+hardware_compute_test_roles: []

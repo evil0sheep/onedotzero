@@ -1,8 +1,7 @@
 ---
 # Play 1: Run tasks as the ansible_user
 - name: Configure local SSH client for compute nodes
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: false
   vars_files:
     - vars/main.yml
@@ -26,8 +25,7 @@
 
 # Play 2: Run tasks as root
 - name: Configure base system and network gateway
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: true
   vars_files:
     - vars/main.yml
@@ -63,10 +61,10 @@
     - devtools
     - base
     - gateway
+    - test_environment
 
 - name: Configure NFS, PXE, and DNS services
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: true
   vars_files:
     - vars/main.yml
@@ -95,8 +93,7 @@
         state: restarted
 
 - name: Apply hardware-specific configurations
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: true
   vars_files:
     - "hardware_vars/{{ hardware_version }}.yml"
@@ -107,8 +104,7 @@
       loop: "{{ hardware_control_configure_roles | default([]) }}"
 
 - name: Install and configure python tooling
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: false
   roles:
     - python_tools

@@ -1,8 +1,7 @@
 ---
 # Play 1: Gather SSH key from the user running the playbook
 - name: Gather local user SSH key
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: false
   vars_files:
     - vars/main.yml
@@ -23,8 +22,7 @@
 
 # Play 2: Prepare the chroot environment on the control node
 - name: Prepare golden image chroot environment
-  hosts: localhost
-  connection: local
+  hosts: "{{ target_host | default('localhost') }}"
   become: true
   vars_files:
     - vars/main.yml

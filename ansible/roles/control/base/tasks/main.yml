@@ -13,14 +13,7 @@
       - pxelinux
       - p7zip-full
       - grub-efi-amd64-bin
-      - docker.io
     state: present
-
-- name: Ensure docker daemon is running
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: true
 
 - name: Create TFTP and HTTP directories
   ansible.builtin.file:
@@ -49,13 +42,6 @@
     mode: "0644"
   notify: Apply netplan
   changed_when: false
-  when: ansible_virtualization_type != 'docker'
-
-- name: Add ansible user to the docker group
-  ansible.builtin.user:
-    name: "{{ ansible_env.SUDO_USER }}"
-    groups: docker
-    append: yes
   when: ansible_virtualization_type != 'docker'
 
 - name: Reset SSH connection to apply group changes

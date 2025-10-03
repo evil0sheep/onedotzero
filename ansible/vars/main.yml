@@ -1,3 +1,2 @@
-compute_interface: enx8cae4cf44e21
 compute_subnet: 192.168.10
 control_node_ip: "{{ compute_subnet }}.1"
