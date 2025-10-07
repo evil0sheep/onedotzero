@@ -616,12 +616,10 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-    # Load hardware config for all commands except 'hardware'
-    if args.command != "hardware":
+
+    if args.command not in ["doc", "hardware"]:
         version = get_hardware_version()
         load_hardware_config(version)
-
-    if args.command not in ["doc"]:
         generate_inventory()
         if args.remote:
             remote_host = HARDWARE_CONFIG.get("control_host", "control")

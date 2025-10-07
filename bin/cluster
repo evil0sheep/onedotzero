@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# This script is a wrapper to execute the cluster.py script within its
+# intended python virtual environment.
+
+# Find the absolute path of the directory containing this script.
+# This is a robust way to do it, works even with symlinks and when called from other dirs.
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# The project root is one level up from the 'bin' directory where this script lives.
+PROJECT_ROOT=$(dirname "$SCRIPT_DIR")
+
+VENV_ACTIVATE="$PROJECT_ROOT/.venv/bin/activate"
+
+if [ ! -f "$VENV_ACTIVATE" ]; then
+    echo "Error: Virtual environment not found at $VENV_ACTIVATE" >&2
+    echo "Please run 'scripts/init.sh' to create it." >&2
+    exit 1
+fi
+
+# Load the virtual environment. The '.' command is a synonym for 'source'.
+. "$VENV_ACTIVATE"
+
+# Now, execute the Python script, passing all command-line arguments to it.
+# 'exec' is used to replace the shell process with the Python process,
+# which is slightly more efficient.
+exec python3 "$PROJECT_ROOT/scripts/cluster.py" "$@"
