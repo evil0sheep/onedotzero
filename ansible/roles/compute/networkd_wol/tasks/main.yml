@@ -3,7 +3,7 @@
     dest: /etc/systemd/network/99-wol.link
     content: |
       [Match]
-      Name=en*
+      Name={{ control_interface }}
 
       [Link]
       WakeOnLan=magic

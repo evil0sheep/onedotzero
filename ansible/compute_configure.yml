@@ -13,7 +13,8 @@
         state: absent
       delegate_to: localhost
 
-  roles: []
+  roles:
+    - networkd_wol
 
   tasks:
     - name: Include hardware-specific configuration roles

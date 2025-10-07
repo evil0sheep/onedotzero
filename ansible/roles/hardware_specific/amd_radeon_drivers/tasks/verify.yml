@@ -1,0 +1,54 @@
+---
+- name: Check user groups
+  ansible.builtin.command:
+    cmd: "groups compute"
+  register: user_groups
+  changed_when: false
+
+- name: Assert user is in render and video groups
+  ansible.builtin.assert:
+    that:
+      - "'render' in user_groups.stdout"
+      - "'video' in user_groups.stdout"
+    fail_msg: "User 'compute' is not in 'render' and 'video' groups."
+    success_msg: "User 'compute' is in 'render' and 'video' groups."
+
+- name: Check dkms status
+  ansible.builtin.command:
+    cmd: "dkms status"
+  register: dkms_status
+  changed_when: false
+
+- name: Assert amdgpu driver is installed
+  ansible.builtin.assert:
+    that:
+      - "'amdgpu' in dkms_status.stdout"
+      - "'installed' in dkms_status.stdout"
+    fail_msg: "amdgpu driver not found or not installed via dkms."
+    success_msg: "amdgpu driver is installed via dkms."
+
+- name: Check rocminfo for Radeon device
+  ansible.builtin.command:
+    cmd: "rocminfo"
+  register: rocminfo_output
+  changed_when: false
+
+- name: Assert Radeon device is present
+  ansible.builtin.assert:
+    that:
+      - "'Radeon' in rocminfo_output.stdout"
+    fail_msg: "No Radeon device found in rocminfo output."
+    success_msg: "Radeon device found in rocminfo output."
+
+- name: Check clinfo for GPU device
+  ansible.builtin.command:
+    cmd: "clinfo"
+  register: clinfo_output
+  changed_when: false
+
+- name: Assert GPU device type is present
+  ansible.builtin.assert:
+    that:
+      - "'CL_DEVICE_TYPE_GPU' in clinfo_output.stdout"
+    fail_msg: "No GPU device found in clinfo output."
+    success_msg: "GPU device found in clinfo output."

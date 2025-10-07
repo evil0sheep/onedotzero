@@ -17,7 +17,7 @@
   loop: "{{ ansible_facts.interfaces }}"
   when:
     - networkd_wol_ethtool_path.rc == 0
-    - item.startswith('en')
+    - item == control_interface
 
 - name: Assert that Wake-on-LAN is enabled on ethernet interfaces
   ansible.builtin.assert:

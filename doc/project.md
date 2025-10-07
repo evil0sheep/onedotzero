@@ -47,3 +47,4 @@ Please read each task in the todo list one-by-one and for each item think about 
   2. deduplicate inventory path resolution in `scripts/cluster.py`
   3. remove remote flag from cluster.py
   4. dont setup test environment in test control node
+  5. make the `compute` user and ansible variable instead of hardcoding it everywhere

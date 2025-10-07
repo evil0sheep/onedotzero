@@ -43,6 +43,11 @@
           <username> ALL=(ALL) NOPASSWD: ALL
           (replace <username> with your actual username)
       when: sudo_check.rc != 0
+
+    - name: Ensure chroot filesystems are unmounted
+      ansible.builtin.include_role:
+        name: chroot_cleanup
+
   tasks:
     - name: Install debootstrap dependencies
       ansible.builtin.apt:
