@@ -6,7 +6,7 @@ driver:
   provider:
     name: virtualbox
 platforms:
-  - name: control-node
+  - name: test-control-node
     box: "generic/ubuntu2204"
     memory: 1024
     cpus: 1
@@ -14,7 +14,7 @@ platforms:
       - network_name: private_network
         ip: 192.168.56.10
         auto_config: true
-  - name: compute-node
+  - name: test-compute-node
     box: "generic/ubuntu2204"
     memory: 1024
     cpus: 1

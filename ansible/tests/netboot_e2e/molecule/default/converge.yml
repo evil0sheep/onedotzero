@@ -3,20 +3,64 @@
   hosts: all
   gather_facts: false
 
-- name: Provision control node
-  import_playbook: ../../../../control_configure.yml
-  vars:
-    hardware_version: "netboot_e2e_test"
-    target_host: "control-node"
+- name: Run build and configure on the control node
+  hosts: test-control-node
+  # Connect as the default vagrant user, no user override needed.
+  tasks:
+    - name: Install rsync on the control node
+      ansible.builtin.apt:
+        name: rsync
+        state: present
+        update_cache: true
+      become: true
 
-- name: Build image on control node
-  import_playbook: ../../../../build_image.yml
-  vars:
-    hardware_version: "netboot_e2e_test"
-    target_host: "control-node"
+    - name: Install ansible on the control node
+      ansible.builtin.apt:
+        name: ansible
+        state: present
+      become: true
 
-- name: Configure compute node
-  hosts: compute-node
+    - name: Sync project source to the control node
+      ansible.posix.synchronize:
+        src: ../../../../../../
+        dest: /home/vagrant/onedotzero
+        delete: true
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=.venv"
+          - "--exclude=__pycache__"
+          - "--exclude=.ropeproject"
+
+    # - name: Install community.general for root user
+    #   ansible.builtin.command:
+    #     cmd: ansible-galaxy collection install community.general
+    #   become: true
+    #   environment:
+    #     HOME: /root
+
+    # - name: Pause for interactive debugging
+    #   ansible.builtin.pause:
+    #     seconds: 36000
+    #     prompt: |
+    #       ###############################################################################                                                                          #
+    #       #       molecule login --host test-control-node                               #
+    #       #                                                                             #
+    #       #   Once you are finished, press ENTER in THIS terminal to continue.          #
+    #       #                                                                             #
+    #       ###############################################################################
+
+    - name: Run the build_image playbook on the control node
+      ansible.builtin.command:
+        cmd: sudo -E ansible-playbook -i ansible/inventory/netboot_e2e_test/hosts.ini ansible/build_image.yml --extra-vars "hardware_version=netboot_e2e_test"
+        chdir: /home/vagrant/onedotzero
+
+    - name: Run the control_configure playbook on the control node
+      ansible.builtin.command:
+        cmd: sudo -E ansible-playbook -i ansible/inventory/netboot_e2e_test/hosts.ini ansible/control_configure.yml --extra-vars "hardware_version=netboot_e2e_test"
+        chdir: /home/vagrant/onedotzero
+
+- name: Verify compute node can mount the NFS share
+  hosts: test-compute-node
   gather_facts: true
   vars_files:
     - vars/netboot_e2e.yml
@@ -26,17 +70,20 @@
         name: nfs-common
         state: present
         update_cache: true
+      become: true
 
     - name: Create mount point for NFS root
       ansible.builtin.file:
         path: /mnt/nfs_root
         state: directory
         mode: "0755"
+      become: true
 
     - name: Mount the NFS share from the control node
       ansible.posix.mount:
         src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
         path: /mnt/nfs_root
         fstype: nfs
-        opts: "rw,sync"
+        opts: "ro,sync"
         state: mounted
+      become: true

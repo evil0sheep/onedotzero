@@ -17,4 +17,5 @@
       ~/venvs/onedotzero/bin/ansible-galaxy collection install
       ansible.posix
       community.general
+      community.crypto
   changed_when: false

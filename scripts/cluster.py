@@ -27,7 +27,7 @@ import shlex
 
 # Configure logging
 logging.basicConfig(
-    level=logging.WARN, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 # --- Configuration ---
@@ -38,6 +38,7 @@ ANSIBLE_DIR = os.path.join(PROJECT_ROOT, "ansible")
 DYN_INVENTORY_PATH = os.path.join(ANSIBLE_DIR, "inventory.dyn")
 DYN_INVENTORY_RELATIVE_PATH = "ansible/inventory.dyn"
 HARDWARE_VERSION_FILE = os.path.join(PROJECT_ROOT, ".hardware_version")
+ANSIBLE_TESTING_HOST = "odz_test"
 
 # Global var to hold hardware config
 HARDWARE_CONFIG = None
@@ -73,10 +74,13 @@ def load_hardware_config(version):
 
 
 def run_command(
-    command, remote=True, capture_output=False, check=True, suppress_errors=False
+    command, remote=True, capture_output=False, check=True, suppress_errors=False, remote_host_override=None
 ):
     """Runs a command locally or remotely."""
     remote_host = HARDWARE_CONFIG.get("control_host", "control")
+
+    if remote_host_override:
+        remote_host = remote_host_override
 
     # Construct the command
     if remote:
@@ -384,11 +388,23 @@ def control_cmd(args):
     run_command(args.command, remote=True)
 
 
+def ansible_testing_configure(args):
+    """configures testing host"""
+    inventory_path = os.path.join(
+        "ansible/inventory", get_hardware_version(), "hosts.ini"
+    )
+    command = (
+        f"ansible-playbook -i {inventory_path} ansible/testing_configure.yml "
+        f"--extra-vars 'hardware_version={get_hardware_version()}'"
+    )
+    run_command(command, remote=True, remote_host_override=ANSIBLE_TESTING_HOST)
+
+
 def ansible_lint(args):
     """Lints all ansible files."""
     logging.info("Linting all ansible files...")
     command = "source ~/venvs/onedotzero/bin/activate && ansible-lint"
-    run_command(command, remote=True)
+    run_command(command, remote=True, remote_host_override=ANSIBLE_TESTING_HOST)
     logging.info("Ansible linting complete.")
 
 
@@ -397,11 +413,14 @@ def ansible_test(args):
     test_name = args.test_name
     logging.info(f"Searching for Molecule test: {test_name}")
 
-    # Define remote search paths relative to the remote project root
-    remote_project_dir = os.path.join(REMOTE_DIR, "ansible")
+    # Define remote search paths relative to the remote project rootPROJECT_ROOT
+    if args.test_remote:
+        project_dir = os.path.join(REMOTE_DIR, "ansible")
+    else:
+        project_dir = os.path.join(PROJECT_ROOT, "ansible")
     search_paths = [
-        os.path.join(remote_project_dir, "tests"),
-        os.path.join(remote_project_dir, "roles"),
+        os.path.join(project_dir, "tests"),
+        os.path.join(project_dir, "roles"),
     ]
 
     target_path = None
@@ -409,31 +428,35 @@ def ansible_test(args):
         potential_path = os.path.join(base_path, test_name)
         try:
             # Check if the directory exists on the remote
-            run_command(f"test -d {potential_path}", remote=True, capture_output=True)
+            run_command(f"test -d {potential_path}", remote=args.test_remote, capture_output=True, remote_host_override=ANSIBLE_TESTING_HOST)
             target_path = potential_path
-            logging.info(f"Found test at remote path: {target_path}")
+            logging.info(f"Found test at  path: {target_path}")
             break
         except subprocess.CalledProcessError:
             continue
 
     if not target_path:
-        logging.error(f"Molecule test '{test_name}' not found on the remote.")
+        logging.error(f"Molecule test '{test_name}' not found")
         logging.error("Searched in:")
         for path in search_paths:
             logging.error(f"  - {os.path.join(path, test_name)}")
         sys.exit(1)
+
 
     ## some kind of weird bug in molecule makes it so that the vagrant playbooks cant
     # find the vagrant plugin and so the path has to be manually specified. This seems
     # super broken and bad to me but i couldnt figure it out so instead we do this weird workaround
     #
     # Define the path to the custom modules within the remote venv
-    remote_venv_dir = "~/venvs/onedotzero"
-    module_path = f"{remote_venv_dir}/lib/python*/site-packages/molecule_vagrant/modules"
+    if args.test_remote:
+        venv_dir = "~/venvs/onedotzero"
+    else:
+        venv_dir = f'{PROJECT_ROOT}/.venv'
+    module_path = f"{venv_dir}/lib/python*/site-packages/molecule_vagrant/modules"
 
     # 1. Find the exact module path on the remote machine by searching for the 'modules' directory.
-    find_cmd = "find ~/venvs/onedotzero/lib/python*/site-packages/molecule_vagrant -name 'modules' -type d"
-    proc = run_command(find_cmd, remote=True, capture_output=True)
+    find_cmd = f"find {venv_dir}/lib/python*/site-packages/molecule_vagrant -name 'modules' -type d"
+    proc = run_command(find_cmd, remote=args.test_remote, capture_output=True, remote_host_override=ANSIBLE_TESTING_HOST)
 
     # Take only the first line of output to be safe.
     module_path = proc.stdout.strip().splitlines()[0] if proc.stdout.strip() else None
@@ -444,13 +467,13 @@ def ansible_test(args):
 
     # 2. Build and run the final command, exporting the discovered path.
     command = (
-        f"source ~/venvs/onedotzero/bin/activate && "
+        f"source {venv_dir}/bin/activate && "
         f"cd {target_path} && "
         f"export ANSIBLE_LIBRARY='{module_path}' && "
-        f"molecule test"
+        f"molecule test -- -vvv"
     )
 
-    run_command(command, remote=True)
+    run_command(command, remote=args.test_remote, remote_host_override=ANSIBLE_TESTING_HOST)
     logging.info(f"Molecule test for '{test_name}' complete.")
 
 
@@ -588,6 +611,12 @@ def main():
         default=True,
         help="Execute commands on the remote host (default: True).",
     )
+    parser.add_argument(
+        "--test-remote",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Execute commands on the remote host (default: True).",
+    )
 
     subparsers = parser.add_subparsers(dest="command")
 
@@ -669,6 +698,9 @@ def main():
     ansible_parser = subparsers.add_parser("ansible", help="Manage ansible content.")
     ansible_subparsers = ansible_parser.add_subparsers(dest="action", required=True)
     ansible_subparsers.add_parser(
+        "testing_configure", help="Configure testing environment for ansible tests"
+    ).set_defaults(func=ansible_testing_configure)
+    ansible_subparsers.add_parser(
         "lint", help="Lint all ansible files."
     ).set_defaults(func=ansible_lint)
     test_parser = ansible_subparsers.add_parser(
@@ -703,7 +735,16 @@ def main():
         load_hardware_config(version)
         generate_inventory()
         if args.remote:
-            remote_host = HARDWARE_CONFIG.get("control_host", "control")
+            if args.command == "ansible":
+                remote_host = ANSIBLE_TESTING_HOST
+            else:
+                remote_host = HARDWARE_CONFIG.get("control_host", "control")
+
+            mkdir_cmd = f"ssh {remote_host} 'mkdir -p ~/remote'"
+            subprocess.run(
+                mkdir_cmd, shell=True, check=True, capture_output=True, text=True
+            )
+
             # Rsync is always checked because if it fails, nothing else will work.
             rsync_cmd = f"rsync -avz --delete --exclude='.git' --exclude='.venv' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
             logging.debug(

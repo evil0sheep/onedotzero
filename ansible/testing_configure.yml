@@ -1,0 +1,41 @@
+---
+- name: Configure testing environment
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  pre_tasks:
+    - name: Check for passwordless sudo
+      ansible.builtin.command: sudo -n true
+      register: sudo_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Fail if passwordless sudo is not configured
+      ansible.builtin.fail:
+        msg: |
+          Passwordless sudo is not configured for the current user.
+          Please configure it by running 'sudo visudo' on the control node
+          and adding the following line to the end of the file:
+          <username> ALL=(ALL) NOPASSWD: ALL
+          (replace <username> with your actual username)
+      when: sudo_check.rc != 0
+
+    - name: Install Ansible
+      ansible.builtin.apt:
+        name: ansible
+        state: present
+        update_cache: true
+
+    - name: Install community.general Ansible collection
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install community.general
+        creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/general"
+
+  roles:
+    - devtools
+    - test_environment
+
+- name: Install and configure python tooling
+  hosts: "{{ target_host | default('localhost') }}"
+  become: false
+  roles:
+    - python_tools
