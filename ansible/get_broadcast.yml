@@ -3,6 +3,7 @@
   connection: local
   vars_files:
     - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
   tasks:
     - name: Get interface facts
       ansible.builtin.setup:
