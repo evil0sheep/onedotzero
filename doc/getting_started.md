@@ -20,17 +20,19 @@ Host control_0_1
 This can be any configuration you want for remote development or whatever, as long as the `Host` line is correct and you can ssh to the control node with `ssh control_0_1` (or `ssh control_0_2` for hardware 0.2)
 
 ## Init venv
-Run `scripts/init.sh` from the root of the project directory to create the python venv for `cluster.py` and install the dependencies. You must source this venv before running `cluster.py`
+Run `scripts/init.sh` from the root of the project directory to create the python venv for `cluster.py` and install the dependencies. You must source this venv before running `cluster.py`. Alternative you can run `/bin/cluster` which is an executable shell wrapper that sets up the venv
 
 ## (OPTIONAL) modify your environment for better ergonomics.
-I have the following in my `.zshrc` to improve ergonomics
+You can source `scripts/environment.sh` to set up your environment to make running commands easier. I have the following in my `.zshrc` to improve ergonomics
 
 ```bash
-export PATH="$PATH:/path/to/onedotzero"
-alias onedotzero='source /path/to/onedotzero/.venv/bin/activate'
+alias odz="(cd ~/workspace/onedotzero && source scripts/environment.sh && ${SHELL} -i)"
+alias odz_alt="(cd ~/workspace/onedotzero_alt && source scripts/environment.sh && ${SHELL} -i)"
 ```
 
-which lets me run type `onedotzero` to source the venv and `cluster <command>` to mess with the cluster. Optional but further commands in this doc are written assuming it, so if you dont do it then just mentally adjust commands
+which lets me run type `odz` to source the venv and then I can run `cluster <command>` to mess with the cluster, and `exit` will reset the enviroment and bring me back to the cwd from whence i called `odz`. `~/workspace/onedotzero` and `~/workspace/onedotzero_alt` are just two checkouts of the same git repo that I use for A and B tasks (e.g. I use `odz` for cluster development and `odz_alt` to work on testing/documentation/cleanup tasks while i wait for images to build and the cluster to provision etc.)
+
+All of this is optional but if you see `cluster foo` later in the document it is assuming that the `bin` dir is in your path and the python venv is sourced
 
 ## Set a hardware version
 `cluster.py` controls which hardware it targets by storing a string like "0.1" or "0.2" in `.hardware_version`, when running commands it will read this string and use it to resolve an SSH host to connect to as well as a hardware configuration yml like `ansible/hardware_vars/0.1.yml`. You can write this file manually, or use the helper
