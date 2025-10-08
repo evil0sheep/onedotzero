@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e # Exit immediately if a command exits with a non-zero status.
+
+export PYTORCH_ROCM_ARCH="{{ pytorch_rocm_arch }}"
+export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+
+source /opt/venvs/onedotzero/bin/activate
+
+python3 setup.py develop
+
+echo "--- Build script finished successfully ---"

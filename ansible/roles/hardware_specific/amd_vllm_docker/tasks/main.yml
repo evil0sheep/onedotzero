@@ -1,0 +1,6 @@
+---
+- name: Pull VLLM ROCm docker image
+  community.docker.docker_image:
+    name: rocm/vllm
+    tag: rocm6.4.1_vllm_0.10.1_20250909
+    source: pull

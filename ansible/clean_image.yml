@@ -5,7 +5,7 @@
   tasks:
     - name: Ensure chroot filesystems are unmounted
       ansible.builtin.include_role:
-        name: chroot_cleanup
+        name: control/chroot_connection_cleanup
 
     - name: Stop and disable the NFS server
       ansible.builtin.service:

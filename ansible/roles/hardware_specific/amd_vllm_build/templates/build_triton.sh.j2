@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e # Exit immediately if a command exits with a non-zero status.
+
+source /opt/venvs/onedotzero/bin/activate
+
+if [ ! -f setup.py ]; then cd python; fi
+
+python3 setup.py install
+
+echo "--- Build script finished successfully ---"

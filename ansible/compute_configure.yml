@@ -14,7 +14,7 @@
       delegate_to: localhost
 
   roles:
-    - networkd_wol
+    - compute/networkd_wol
 
   tasks:
     - name: Include hardware-specific configuration roles

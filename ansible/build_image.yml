@@ -46,7 +46,7 @@
 
     - name: Ensure chroot filesystems are unmounted
       ansible.builtin.include_role:
-        name: chroot_cleanup
+        name: control/chroot_connection_cleanup
 
   tasks:
     - name: Install debootstrap dependencies
@@ -85,6 +85,7 @@
         - proc
         - sys
         - dev
+        - sys/fs/cgroup
 
     - name: Add golden_image_chroot host to inventory
       ansible.builtin.add_host:
@@ -98,6 +99,13 @@
 - name: Configure golden image and cleanup
   hosts: golden_image_chroot
   become: true
+  vars:
+    roles_to_include:
+      - common/docker
+      - networkd_wol
+      - devtools
+      - venv
+      - vllm_source
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"
@@ -107,26 +115,21 @@
         - name: Include chroot_config role
           ansible.builtin.include_role:
             name: chroot_config
-        - name: Include networkd_wol role
+        - name: Include hardware-agnostic golden image roles
           ansible.builtin.include_role:
-            name: networkd_wol
-        - name: Include devtools role
-          ansible.builtin.include_role:
-            name: devtools
-        - name: Include venv role
-          ansible.builtin.include_role:
-            name: venv
-        - name: Include vllm_source role
-          ansible.builtin.include_role:
-            name: vllm_source
+            name: "{{ item }}"
+          loop: "{{ roles_to_include | default([]) }}"
         - name: Include hardware-specific golden image roles
           ansible.builtin.include_role:
             name: "{{ item }}"
           loop: "{{ hardware_golden_image_roles | default([]) }}"
       always:
+        - name: Run chroot cleanup tasks on chroot
+          ansible.builtin.include_role:
+            name: compute/chroot_cleanup
         - name: Run chroot cleanup tasks on localhost
           ansible.builtin.include_role:
-            name: chroot_cleanup
+            name: control/chroot_connection_cleanup
             apply:
               delegate_to: localhost
               become: true

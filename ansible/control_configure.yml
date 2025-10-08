@@ -58,10 +58,11 @@
         cmd: ansible-galaxy collection install community.general
         creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/general"
   roles:
-    - devtools
-    - base
-    - gateway
-    - test_environment
+    - common/devtools
+    - common/docker
+    - control/base
+    - control/gateway
+    - control/test_environment
 
 - name: Configure NFS, PXE, and DNS services
   hosts: "{{ target_host | default('localhost') }}"

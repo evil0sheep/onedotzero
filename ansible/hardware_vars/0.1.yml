@@ -7,6 +7,7 @@ compute_interface: "enx8cae4cf44e21"
 control_interface: enp6s0
 arch: "amd64"
 debootstrap_arch: "amd64"
+pytorch_rocm_arch: "gfx1200"
 
 compute_nodes:
   - mac: "d8:bb:c1:9b:85:c7"

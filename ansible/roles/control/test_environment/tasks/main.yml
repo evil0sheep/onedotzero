@@ -39,24 +39,6 @@
     append: yes
   when: ansible_virtualization_type != 'docker'
 
-- name: Install Docker
-  ansible.builtin.apt:
-    name: docker.io
-    state: present
-
-- name: Ensure docker daemon is running
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: true
-
-- name: Add ansible user to the docker group
-  ansible.builtin.user:
-    name: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
-    groups: docker
-    append: yes
-  when: ansible_virtualization_type != 'docker'
-
 - name: Reset SSH connection to apply group changes
   ansible.builtin.meta: reset_connection
   when: ansible_virtualization_type != 'docker'

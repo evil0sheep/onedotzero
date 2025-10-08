@@ -1,0 +1,113 @@
+---
+- name: Check for existing ROCm torch installation
+  ansible.builtin.command:
+    cmd: /opt/venvs/onedotzero/bin/pip freeze
+  register: pip_freeze_output
+  changed_when: false
+  # We expect this to fail if torch isn't installed, which is fine.
+  ignore_errors: true
+
+- name: Uninstall torch if it is not the ROCm version
+  ansible.builtin.pip:
+    name: torch
+    state: absent
+    virtualenv: "/opt/venvs/onedotzero"
+  when:
+    - pip_freeze_output.stdout is defined
+    - "'torch' in pip_freeze_output.stdout"
+    - "'+rocm' not in pip_freeze_output.stdout"
+
+- name: Install torch and torchvision for ROCm if not already installed
+  ansible.builtin.pip:
+    name:
+      - torch
+      - torchvision
+    extra_args: --no-cache-dir --index-url https://download.pytorch.org/whl/rocm6.1
+    virtualenv: "/opt/venvs/onedotzero"
+  when:
+    - pip_freeze_output.stdout is not defined
+    - "'torch' not in pip_freeze_output.stdout"
+    - "'+rocm' not in pip_freeze_output.stdout"
+
+- name: Install build dependencies
+  ansible.builtin.pip:
+    name:
+      - ninja
+      - cmake < 4.0
+      - wheel
+      - pybind11
+    virtualenv: "/opt/venvs/onedotzero"
+
+- name: Uninstall any existing Triton version
+  ansible.builtin.pip:
+    name: triton
+    state: absent
+    virtualenv: "/opt/venvs/onedotzero"
+
+- name: Clone the Triton repository at a specific commit
+  ansible.builtin.git:
+    repo: https://github.com/triton-lang/triton.git
+    dest: /usr/local/src/triton # Or any other temporary path
+    version: e5be006
+    clone: yes
+    update: no # Ensures it stays at the specified version
+
+# using ansible native commands to build Triton isnt using venv properly, so use bash script
+- name: Create Triton build script on remote host
+  ansible.builtin.template:
+    src: build_triton.sh.j2
+    dest: /tmp/build_triton.sh
+    mode: "0755"
+
+- name: Execute Triton build script
+  ansible.builtin.command:
+    cmd: /tmp/build_triton.sh
+    chdir: /usr/local/src/triton
+    creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/triton"
+
+- name: Build and install AMD SMI from local source
+  ansible.builtin.pip:
+    name: /opt/rocm/share/amd_smi
+    virtualenv: "/opt/venvs/onedotzero"
+
+- name: Install and upgrade Python dependencies in the correct venv
+  ansible.builtin.pip:
+    name:
+      - numba
+      - scipy
+      - "huggingface-hub[cli,hf_transfer]"
+      - setuptools_scm
+    state: latest
+    virtualenv: "/opt/venvs/onedotzero"
+
+- name: Install numpy with a version constraint
+  ansible.builtin.pip:
+    name: "numpy<2"
+    virtualenv: "/opt/venvs/onedotzero"
+
+- name: Install dependencies from requirements file
+  ansible.builtin.pip:
+    requirements: /usr/local/src/vllm/requirements/rocm.txt
+    executable: /opt/venvs/onedotzero/bin/pip
+
+- name: Create vLLM build script on remote host
+  ansible.builtin.template:
+    src: build_vllm.sh.j2
+    dest: /tmp/build_vllm.sh
+    mode: "0755"
+
+- name: Execute vLLM build script
+  ansible.builtin.command:
+    cmd: /tmp/build_vllm.sh
+    chdir: /usr/local/src/vllm
+    creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/vllm"
+#
+# - name: Build and install vLLM for ROCm
+#   ansible.builtin.command:
+#     cmd: /opt/venvs/onedotzero/bin/python3 setup.py develop
+#     chdir: /usr/local/src/vllm
+#     creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/vllm.egg-link" # To make the task idempotent
+#   become: true
+#   environment:
+#     PYTORCH_ROCM_ARCH: "{{ pytorch_rocm_arch }}"
+#     CMAKE_ARGS: "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"

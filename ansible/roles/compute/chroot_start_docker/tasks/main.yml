@@ -1,0 +1,39 @@
+---
+- name: Configure Docker daemon to listen on Unix socket and use VFS
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "hosts": ["unix:///var/run/docker.sock"],
+        "storage-driver": "vfs"
+      }
+    mode: "0644"
+
+- name: Check for cgroup mount
+  ansible.builtin.command: "mount"
+  register: mount_output
+  changed_when: false
+
+- name: Display cgroup mount status
+  ansible.builtin.debug:
+    msg: "{{ mount_output.stdout_lines | select('contains', 'cgroup') | list }}"
+
+- name: Check cgroup directory contents
+  ansible.builtin.command: "ls -la /sys/fs/cgroup"
+  register: cgroup_ls_output
+  changed_when: false
+
+- name: Display cgroup directory contents
+  ansible.builtin.debug:
+    msg: "{{ cgroup_ls_output.stdout_lines }}"
+
+- name: Start Docker daemon in chroot
+  ansible.builtin.shell:
+    cmd: "dockerd > /tmp/dockerd-build.log 2>&1 &"
+  changed_when: false
+
+- name: Wait for Docker socket to be available
+  ansible.builtin.wait_for:
+    path: /var/run/docker.sock
+    state: present
+    timeout: 30
