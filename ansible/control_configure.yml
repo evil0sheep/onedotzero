@@ -75,9 +75,9 @@
       ansible.builtin.setup:
         filter: "ansible_network_resources"
   roles:
-    - nfs_server
-    - pxe_boot
-    - dnsmasq
+    - control/nfs_server
+    - control/pxe_boot
+    - control/dnsmasq
 
   post_tasks:
     - name: Ensure remote directory exists
@@ -108,4 +108,4 @@
   hosts: "{{ target_host | default('localhost') }}"
   become: false
   roles:
-    - python_tools
+    - control/python_tools

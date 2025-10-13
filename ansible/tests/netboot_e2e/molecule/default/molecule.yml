@@ -25,6 +25,6 @@ platforms:
 provisioner:
   name: ansible
   env:
-    ANSIBLE_ROLES_PATH: "../../../../roles/common:../../../../roles/control:../../../../roles/compute:../../../../roles/hardware_specific"
+    ANSIBLE_ROLES_PATH: "../../../../roles"
 verifier:
   name: ansible

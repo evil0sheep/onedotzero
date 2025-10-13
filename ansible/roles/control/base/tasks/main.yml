@@ -13,6 +13,7 @@
       - pxelinux
       - p7zip-full
       - grub-efi-amd64-bin
+      - ssh
     state: present
 
 - name: Create TFTP and HTTP directories

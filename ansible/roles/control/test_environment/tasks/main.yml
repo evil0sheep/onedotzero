@@ -19,7 +19,9 @@
 
 - name: Add HashiCorp repository
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.key] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    repo: >-
+      deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.key]
+      https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
     state: present
     filename: hashicorp
     update_cache: true
@@ -36,7 +38,7 @@
   ansible.builtin.user:
     name: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
     groups: vboxusers
-    append: yes
+    append: true
   when: ansible_virtualization_type != 'docker'
 
 - name: Reset SSH connection to apply group changes

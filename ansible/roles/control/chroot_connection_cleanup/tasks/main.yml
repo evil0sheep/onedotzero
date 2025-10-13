@@ -3,28 +3,23 @@
   ansible.posix.mount:
     path: /srv/nfs/ubuntu_golden/proc
     state: unmounted
-  ignore_errors: true
 
 - name: Unmount chroot /dev/pts
   ansible.posix.mount:
     path: /srv/nfs/ubuntu_golden/dev/pts
     state: unmounted
-  ignore_errors: true
 
 - name: Unmount chroot /dev
   ansible.posix.mount:
     path: /srv/nfs/ubuntu_golden/dev
     state: unmounted
-  ignore_errors: true
 
 - name: Unmount chroot /sys/fs/cgroup
   ansible.posix.mount:
     path: /srv/nfs/ubuntu_golden/sys/fs/cgroup
     state: unmounted
-  ignore_errors: true
 
 - name: Unmount chroot /sys
   ansible.posix.mount:
     path: /srv/nfs/ubuntu_golden/sys
     state: unmounted
-  ignore_errors: true

@@ -16,5 +16,5 @@
   ansible.builtin.user:
     name: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
     groups: docker
-    append: yes
+    append: true
   when: ansible_virtualization_type != 'docker'

@@ -19,7 +19,7 @@
   hosts: compute-node
   gather_facts: true
   vars_files:
-    - vars.yml
+    - vars/netboot_e2e.yml
   tasks:
     - name: Ensure NFS client is installed
       ansible.builtin.apt:
@@ -34,7 +34,7 @@
         mode: "0755"
 
     - name: Mount the NFS share from the control node
-      ansible.builtin.mount:
+      ansible.posix.mount:
         src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
         path: /mnt/nfs_root
         fstype: nfs

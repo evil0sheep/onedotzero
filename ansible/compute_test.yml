@@ -9,7 +9,7 @@
   tasks:
     - name: Run hardware independent tests
       ansible.builtin.include_role:
-        name: networkd_wol
+        name: compute/networkd_wol
         tasks_from: verify.yml
 
     - name: Run hardware specific tests

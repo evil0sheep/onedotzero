@@ -102,10 +102,10 @@
   vars:
     roles_to_include:
       - common/docker
-      - networkd_wol
-      - devtools
-      - venv
-      - vllm_source
+      - common/devtools
+      - compute/networkd_wol
+      - compute/venv
+      - compute/vllm_source
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"
