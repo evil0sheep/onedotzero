@@ -163,5 +163,6 @@
         - name: Run chroot cleanup tasks on localhost
           become: true
           block:
-            - ansible.builtin.include_role:
+            - name: Include chroot_connection_cleanup role on localhost
+              ansible.builtin.include_role:
                 name: control/chroot_connection_cleanup

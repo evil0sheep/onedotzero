@@ -31,11 +31,11 @@
         creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/general"
 
   roles:
-    - devtools
-    - test_environment
+    - common/devtools
+    - control/test_environment
 
 - name: Install and configure python tooling
   hosts: "{{ target_host | default('localhost') }}"
   become: false
   roles:
-    - python_tools
+    - control/python_tools

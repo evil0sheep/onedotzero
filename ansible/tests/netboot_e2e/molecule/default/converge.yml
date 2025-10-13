@@ -38,26 +38,30 @@
     #   environment:
     #     HOME: /root
 
+    # # molecule login --host test-control-node
     # - name: Pause for interactive debugging
     #   ansible.builtin.pause:
     #     seconds: 36000
-    #     prompt: |
-    #       ###############################################################################                                                                          #
-    #       #       molecule login --host test-control-node                               #
-    #       #                                                                             #
-    #       #   Once you are finished, press ENTER in THIS terminal to continue.          #
-    #       #                                                                             #
-    #       ###############################################################################
 
     - name: Run the build_image playbook on the control node
       ansible.builtin.command:
-        cmd: sudo -E ansible-playbook -i ansible/inventory/netboot_e2e_test/hosts.ini ansible/build_image.yml --extra-vars "hardware_version=netboot_e2e_test"
+        cmd: >
+          sudo -E ansible-playbook
+          -i ansible/inventory/netboot_e2e_test/hosts.ini
+          ansible/build_image.yml
+          --extra-vars "hardware_version=netboot_e2e_test"
         chdir: /home/vagrant/onedotzero
+      changed_when: false
 
     - name: Run the control_configure playbook on the control node
       ansible.builtin.command:
-        cmd: sudo -E ansible-playbook -i ansible/inventory/netboot_e2e_test/hosts.ini ansible/control_configure.yml --extra-vars "hardware_version=netboot_e2e_test"
+        cmd: >
+          sudo -E ansible-playbook
+          -i ansible/inventory/netboot_e2e_test/hosts.ini
+          ansible/control_configure.yml
+          --extra-vars "hardware_version=netboot_e2e_test"
         chdir: /home/vagrant/onedotzero
+      changed_when: false
 
 - name: Verify compute node can mount the NFS share
   hosts: test-compute-node
