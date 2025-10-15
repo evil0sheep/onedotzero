@@ -1,0 +1,16 @@
+---
+- name: Verify
+  hosts: test-control-node
+  gather_facts: false
+  tasks:
+    - name: Search for the kernel image
+      ansible.builtin.find:
+        paths: /srv/nfs/ubuntu_golden/boot
+        patterns: "vmlinuz-*"
+      register: find_result
+
+    - name: Assert that the kernel image was found
+      ansible.builtin.assert:
+        that:
+          - find_result.matched > 0
+        fail_msg: "Kernel image (vmlinuz-*) not found in /srv/nfs/ubuntu_golden/boot"

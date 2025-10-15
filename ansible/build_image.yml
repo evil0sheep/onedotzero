@@ -71,11 +71,13 @@
       ansible.builtin.command:
         cmd: ansible-galaxy collection install community.general
         creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/general"
+      changed_when: false
 
     - name: Install community.crypto Ansible collection
       ansible.builtin.command:
         cmd: ansible-galaxy collection install community.crypto
         creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/crypto"
+      changed_when: false
 
   tasks:
     - name: Install debootstrap dependencies
@@ -115,6 +117,7 @@
         - sys
         - dev
         - sys/fs/cgroup
+      changed_when: false
 
     - name: Add golden_image_chroot host to inventory
       ansible.builtin.add_host:
@@ -123,10 +126,6 @@
         ansible_host: /srv/nfs/ubuntu_golden
         ssh_key_for_chroot: "{{ ssh_public_key }}"
       changed_when: false
-
-    - name: Pause for interactive debugging
-      ansible.builtin.pause:
-        seconds: 36000
 
 # Play 3: Configure the golden image via chroot and cleanup
 - name: Configure golden image and cleanup
@@ -147,7 +146,7 @@
       block:
         - name: Include chroot_config role
           ansible.builtin.include_role:
-            name: chroot_config
+            name: compute/chroot_config
         - name: Include hardware-agnostic golden image roles
           ansible.builtin.include_role:
             name: "{{ item }}"

@@ -1,0 +1,34 @@
+---
+- name: Converge
+  hosts: test-control-node
+  gather_facts: false
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.raw: apt-get update -y
+      changed_when: false
+
+    - name: Install dependencies
+      ansible.builtin.raw: apt-get install -y ansible rsync sudo python3
+      changed_when: false
+
+    - name: Sync project source to the control node
+      ansible.posix.synchronize:
+        src: ../../../../../../
+        dest: /root/onedotzero
+        delete: true
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=.venv"
+          - "--exclude=__pycache__"
+          - "--exclude=.ropeproject"
+      changed_when: false
+
+    - name: Run the build_image playbook on the control node
+      ansible.builtin.command:
+        cmd: >
+          ansible-playbook
+          -i ansible/inventory/build_image_test/hosts.ini
+          ansible/build_image.yml
+          --extra-vars "hardware_version=build_image_test"
+        chdir: /root/onedotzero
+      changed_when: false
