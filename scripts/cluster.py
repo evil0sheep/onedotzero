@@ -235,16 +235,20 @@ def compute_wait(args):
         return 0
 
     for i in range(100):  # Increased attempts
-        try:
-            command = f"ansible compute -i {DYN_INVENTORY_RELATIVE_PATH} -m ping"
-            run_command(
-                command, remote=args.remote, capture_output=True, suppress_errors=True
-            )
+        all_statuses = get_all_compute_node_statuses(
+            args.remote, DYN_INVENTORY_RELATIVE_PATH
+        )
+        if all(status == "UP" for status in all_statuses.values()):
             print("All compute nodes are reachable.")
             return 0
-        except subprocess.CalledProcessError:
-            print(f"Attempt {i + 1}/100 failed. Retrying in 1 second...")
-            time.sleep(1)
+
+        down_nodes = [
+            name for name, status in all_statuses.items() if status == "DOWN"
+        ]
+        print(
+            f"Attempt {i + 1}/100 failed. Waiting for: {', '.join(down_nodes)}. Retrying in 1 second..."
+        )
+        time.sleep(1)
 
     logging.error(f"Not all compute nodes were reachable after 100 attempts.")
     sys.exit(1)
@@ -482,19 +486,19 @@ def cluster_configure(args):
     logging.info("--- Starting Full Cluster Configuration ---")
 
     # Check compute node status before shutting down
-    logging.info("Checking status of compute nodes...")  # Needed for get_host_status
-    compute_nodes_up = False
+    logging.info("Checking status of compute nodes...")
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
     if not compute_nodes:
         logging.info("No compute nodes defined, skipping shutdown check.")
+        compute_nodes_up = False
     else:
+        all_statuses = get_all_compute_node_statuses(
+            args.remote, DYN_INVENTORY_RELATIVE_PATH
+        )
         for node in compute_nodes:
-            status = get_host_status(
-                node["ip"], args.remote, DYN_INVENTORY_RELATIVE_PATH
-            )
+            status = all_statuses.get(node["name"], "DOWN")
             logging.info(f"  - Host: {node['name']} ({node['ip']}) is {status}")
-            if status == "UP":
-                compute_nodes_up = True
+        compute_nodes_up = "UP" in all_statuses.values()
 
     if compute_nodes_up:
         logging.info("One or more compute nodes are up. Shutting them down...")
@@ -514,37 +518,40 @@ def cluster_configure(args):
 
 def cluster_status(args):
     """Provides a quick status of the entire cluster."""
-    print("--- Cluster Status ---")
-    control_host = HARDWARE_CONFIG.get("control_host", "Unknown")
-    inventory_path = os.path.join("ansible/inventory", get_hardware_version())
-
-    print(f"Control Node ({control_host}):")
-    # Status check for control node is tricky with local connection, assume up if script runs
-    print(f"  - Status: UP (assumed)")
-    print("")
-
     print("Compute Nodes:")
     compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
     if not compute_nodes:
         print("  - No compute nodes defined in hardware config.")
     else:
         print(f"  - Expected {len(compute_nodes)} node(s) based on config.")
+        all_statuses = get_all_compute_node_statuses(
+            args.remote, DYN_INVENTORY_RELATIVE_PATH
+        )
         for node in compute_nodes:
-            status = get_host_status(
-                node["ip"], args.remote, DYN_INVENTORY_RELATIVE_PATH
-            )
+            status = all_statuses.get(node["name"], "DOWN")
             print(f"  - Host: {node['name']} ({node['ip']})")
             print(f"    - Status: {status}")
 
     print("----------------------")
 
 
-def get_host_status(host, remote, inventory_file):
-    """Checks the status of a single host."""
-    command = f"ansible {host} -i {inventory_file} -m ping -o --timeout 3"
-    # We expect this to fail, so we don't check the result here.
+def get_all_compute_node_statuses(remote, inventory_file):
+    """Checks the status of all compute hosts at once."""
+    command = f"ansible compute -i {inventory_file} -m ping -o --timeout 3"
     proc = run_command(command, remote=remote, capture_output=True, check=False)
-    return "UP" if proc.returncode == 0 else "DOWN"
+
+    statuses = {}
+    compute_nodes = HARDWARE_CONFIG.get("compute_nodes", [])
+    for node in compute_nodes:
+        statuses[node["name"]] = "DOWN"
+
+    if proc.stdout:
+        for line in proc.stdout.splitlines():
+            parts = line.split()
+            if len(parts) > 2 and parts[2] == "SUCCESS":
+                hostname = parts[0]
+                statuses[hostname] = "UP"
+    return statuses
 
 
 def hardware_set(args):
@@ -575,10 +582,10 @@ def cluster_doc(args):
     # without a more complex framework like click.
 
     print("\n## Top-Level Commands")
-    print("* `cluster status`: Get a quick status of the cluster.")
     print("* `cluster configure`: Configure the entire cluster.")
 
     print("\n## Compute Commands (`cluster compute ...`)")
+    print("* `status`: Get a quick status of the cluster.")
     print("* `up`: Wake up all compute nodes.")
     print("* `down`: Shut down all compute nodes.")
     print("* `restart`: Restart all compute nodes.")
@@ -622,9 +629,6 @@ def main():
 
     # Top-level commands
     subparsers.add_parser(
-        "status", help="Get a quick status of the cluster."
-    ).set_defaults(func=cluster_status)
-    subparsers.add_parser(
         "configure", help="Configure the entire cluster."
     ).set_defaults(func=cluster_configure)
     subparsers.add_parser(
@@ -635,6 +639,9 @@ def main():
     # Compute commands
     compute_parser = subparsers.add_parser("compute", help="Manage compute nodes.")
     compute_subparsers = compute_parser.add_subparsers(dest="action", required=True)
+    compute_subparsers.add_parser(
+        "status", help="Get a quick status of the cluster."
+    ).set_defaults(func=cluster_status)
     compute_subparsers.add_parser("up", help="Wake up all compute nodes.").set_defaults(
         func=compute_up
     )
