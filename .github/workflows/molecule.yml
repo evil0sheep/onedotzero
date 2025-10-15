@@ -19,6 +19,8 @@ jobs:
       matrix:
         molecule_test_path:
           - ansible/roles/control/base
+          - ansible/roles/control/llama_cpp_rpc_client
+          - ansible/roles/hardware_specific/amd_llama_cpp_rpc_server
           - ansible/tests/build_image
     steps:
       - name: Check out the repository

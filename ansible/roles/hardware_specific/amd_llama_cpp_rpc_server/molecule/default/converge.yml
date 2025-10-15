@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  vars_files:
+    - ../../../../../vars/main.yml
+    - ../../../../../hardware_vars/0.1.yml
+  roles:
+    - common/devtools
+    - hardware_specific/amd_radeon_drivers
+    - hardware_specific/amd_llama_cpp_rpc_server

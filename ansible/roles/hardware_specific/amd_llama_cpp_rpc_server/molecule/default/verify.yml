@@ -1,0 +1,17 @@
+---
+- name: Verify llama-rpc-server service status
+  hosts: all
+  become: true
+  vars_files:
+    - ../../../../../vars/main.yml
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert that the llama-rpc-server service is enabled
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['llama-rpc-server.service'] is defined"
+          - "ansible_facts.services['llama-rpc-server.service'].status == 'enabled'"
+        fail_msg: "The llama-rpc-server service is not enabled. Full service facts: {{ ansible_facts.services }}"
+        success_msg: "The llama-rpc-server service is enabled correctly."

@@ -7,15 +7,24 @@ compute_interface: "enx8cae4cf44e21"
 control_interface: enp6s0
 arch: "amd64"
 debootstrap_arch: "amd64"
-pytorch_rocm_arch: "gfx1200"
+rocm_arch: "gfx1200"
 
 compute_nodes:
-  - mac: "d8:bb:c1:9b:85:c7"
+  - mac: "d8:bb:c1:a2:3e:a3"
     ip: "{{ compute_subnet }}.100"
     name: "compute0"
   - mac: "d8:bb:c1:9b:84:8b"
     ip: "{{ compute_subnet }}.101"
     name: "compute1"
+
+llama_cpp_models:
+  - hf-repo: bartowski/Mistral-Small-Instruct-2409-GGUF
+    hf-file: Mistral-Small-Instruct-2409-Q4_K_L.gguf
+  - hf-repo: unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF
+    hf-file: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
+
+# llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
+llama_server_model: Mistral-Small-Instruct-2409-Q4_K_L.gguf
 
 hardware_compute_configure_roles: []
 
@@ -23,6 +32,8 @@ hardware_control_configure_roles: []
 
 hardware_golden_image_roles:
   - "hardware_specific/amd_radeon_drivers"
+  - "hardware_specific/amd_llama_cpp_rpc_server"
 
 hardware_compute_test_roles:
   - "hardware_specific/amd_radeon_drivers"
+  - "hardware_specific/amd_llama_cpp_rpc_server"

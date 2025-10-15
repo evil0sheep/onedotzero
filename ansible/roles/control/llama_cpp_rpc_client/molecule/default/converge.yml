@@ -1,0 +1,21 @@
+---
+- name: Converge
+  hosts: all
+  vars_files:
+    - ../../../../../vars/main.yml
+  vars:
+    compute_subnet: 192.168.10
+    compute_nodes:
+      - mac: "d8:bb:c1:9b:85:c7"
+        ip: "{{ compute_subnet }}.100"
+        name: "compute0"
+      - mac: "d8:bb:c1:9b:84:8b"
+        ip: "{{ compute_subnet }}.101"
+        name: "compute1"
+    llama_cpp_models:
+      - hf-repo: ggml-org/gemma-3-270m-GGUF
+        hf-file: gemma-3-270m-Q8_0.gguf
+    llama_server_model: gemma-3-270m-Q8_0.gguf
+  roles:
+    - common/devtools
+    - control/llama_cpp_rpc_client

@@ -1,0 +1,66 @@
+---
+- name: install build deps
+  ansible.builtin.apt:
+    name:
+      - cmake
+      - libcurl4-openssl-dev
+    state: present
+    update_cache: true
+
+- name: Clone source
+  ansible.builtin.git:
+    repo: "https://github.com/ggml-org/llama.cpp.git"
+    dest: "{{ llama_cpp_source_dir }}"
+    version: "{{ llama_cpp_git_hash }}"
+    force: true
+    update: false
+
+- name: Create a directory
+  ansible.builtin.file:
+    path: "{{ llama_cpp_build_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Get HIPCXX path component
+  ansible.builtin.command: hipconfig -l
+  register: hipconfig_l
+  changed_when: false # This command doesn't change state
+
+- name: Get HIP_PATH
+  ansible.builtin.command: hipconfig -R
+  register: hipconfig_r
+  changed_when: false # This command doesn't change state
+
+- name: CMake Configure
+  ansible.builtin.command:
+    cmd: cmake -S .. -DGGML_RPC=ON -DGGML_HIP=ON -DAMDGPU_TARGETS={{ rocm_arch }} -DCMAKE_BUILD_TYPE=Release
+    chdir: "{{ llama_cpp_build_dir }}"
+  environment:
+    HIPCXX: "{{ hipconfig_l.stdout }}/clang"
+    HIP_PATH: "{{ hipconfig_r.stdout }}"
+  changed_when: false # CMake handles idempotence internally, always want to run
+
+- name: CMake Build
+  ansible.builtin.command:
+    cmd: cmake --build . --config Release -- -j 16
+    chdir: "{{ llama_cpp_build_dir }}"
+  environment:
+    HIPCXX: "{{ hipconfig_l.stdout }}/clang"
+    HIP_PATH: "{{ hipconfig_r.stdout }}"
+  changed_when: false # CMake handles idempotence internally, always want to run
+
+- name: Create systemd unit file for llama.cpp RPC server
+  ansible.builtin.template:
+    src: llama-rpc-server.service.j2
+    dest: /etc/systemd/system/llama-rpc-server.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart llama-rpc-server
+
+- name: Ensure llama.cpp RPC server is started and enabled on boot
+  ansible.builtin.systemd:
+    name: llama-rpc-server
+    state: started
+    enabled: yes
+    daemon_reload: yes

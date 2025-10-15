@@ -62,7 +62,6 @@
     - common/docker
     - control/base
     - control/gateway
-    - control/test_environment
 
 - name: Configure NFS, PXE, and DNS services
   hosts: "{{ target_host | default('localhost') }}"
@@ -93,6 +92,15 @@
         name: dnsmasq
         state: restarted
 
+- name: Build and install LLM runtimes
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  vars_files:
+    - "vars/main.yml"
+    - "hardware_vars/{{ hardware_version }}.yml"
+  roles:
+    - control/llama_cpp_rpc_client
+
 - name: Apply hardware-specific configurations
   hosts: "{{ target_host | default('localhost') }}"
   become: true
@@ -103,9 +111,3 @@
       ansible.builtin.include_role:
         name: "{{ item }}"
       loop: "{{ hardware_control_configure_roles | default([]) }}"
-
-- name: Install and configure python tooling
-  hosts: "{{ target_host | default('localhost') }}"
-  become: false
-  roles:
-    - control/python_tools

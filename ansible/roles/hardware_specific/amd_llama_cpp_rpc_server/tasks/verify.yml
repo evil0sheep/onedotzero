@@ -1,0 +1,26 @@
+---
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Assert that the llama-rpc-server service is enabled and running
+  ansible.builtin.assert:
+    that:
+      - "ansible_facts.services['llama-rpc-server.service'] is defined"
+      - "ansible_facts.services['llama-rpc-server.service'].state == 'running'"
+      - "ansible_facts.services['llama-rpc-server.service'].status == 'enabled'"
+    fail_msg: "The llama-rpc-server service is not enabled and running. Full service facts: {{ ansible_facts.services }}"
+    success_msg: "The llama-rpc-server service is enabled and running correctly."
+
+- name: Get startup logs from llama-rpc-server
+  ansible.builtin.shell:
+    cmd: "journalctl -u llama-rpc-server.service --no-pager"
+  become: true
+  changed_when: false
+  register: journal_logs
+
+- name: Assert that ROCm device was found in logs
+  ansible.builtin.assert:
+    that:
+      - "'found 1 ROCm devices' in journal_logs.stdout"
+    fail_msg: "Did not find 'found 1 ROCm devices' in the service logs."
+    success_msg: "Found 'found 1 ROCm devices' in the service logs."

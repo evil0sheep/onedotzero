@@ -24,7 +24,7 @@
     cmd: amdgpu-install -y --usecase=graphics,rocm,rocmdevtools,opencl,openclsdk
   become: true
   register: amdgpu_install_result
-  changed_when: amdgpu_install_result.rc == 0
+  changed_when: "'0 upgraded, 0 newly installed, 0 to remove' not in amdgpu_install_result.stdout"
 
 - name: Add compute user to render and video groups
   ansible.builtin.user:

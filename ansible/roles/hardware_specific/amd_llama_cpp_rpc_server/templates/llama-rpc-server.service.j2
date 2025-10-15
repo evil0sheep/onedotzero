@@ -1,0 +1,21 @@
+[Unit]
+Description=llama.cpp RPC Server
+After=network.target
+
+[Service]
+# Run the service as the user who owns the build directory
+User={{ ansible_user_id }}
+Group={{ ansible_user_id }}
+
+# Set the working directory to the build directory
+WorkingDirectory={{ llama_cpp_build_dir }}
+
+# The command to start the RPC server
+ExecStart={{ llama_cpp_build_dir }}/bin/rpc-server --host 0.0.0.0 -p {{ llama_cpp_rpc_port }}
+
+# Automatically restart the service if it fails
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

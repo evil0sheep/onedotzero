@@ -1,0 +1,17 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    service_name: llama-server
+  tasks:
+    - name: Check if {{ service_name }} service is running
+      ansible.builtin.service_facts:
+
+    - name: Assert that the {{ service_name }} service is enabled
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['{{ service_name }}.service'] is defined"
+          - "ansible_facts.services['{{ service_name }}.service'].status == 'enabled'"
+        fail_msg: "The {{ service_name }} service is not enabled. Full service facts: {{ ansible_facts.services }}"
+        success_msg: "The {{ service_name }} service is enabled correctly."

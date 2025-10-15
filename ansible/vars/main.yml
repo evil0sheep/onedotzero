@@ -1,2 +1,9 @@
 compute_subnet: 192.168.10
 control_node_ip: "{{ compute_subnet }}.1"
+
+llama_cpp_git_hash: c7be9feb
+llama_cpp_rpc_port: 50052
+llama_server_port: 8080
+llama_cpp_models_dir: /opt/models/llama_cpp
+llama_cpp_source_dir: /usr/local/src/llama.cpp
+llama_cpp_build_dir: "{{ llama_cpp_source_dir }}/build-rpc-rocm"

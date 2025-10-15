@@ -109,5 +109,5 @@
 #     creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/vllm.egg-link" # To make the task idempotent
 #   become: true
 #   environment:
-#     PYTORCH_ROCM_ARCH: "{{ pytorch_rocm_arch }}"
+#     PYTORCH_ROCM_ARCH: "{{ rocm_arch }}"
 #     CMAKE_ARGS: "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"

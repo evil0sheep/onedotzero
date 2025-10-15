@@ -1,0 +1,21 @@
+[Unit]
+Description=llama.cpp Server
+After=network.target
+
+[Service]
+# Run the service as the user who owns the build directory
+User=root
+Group=root
+
+# Set the working directory to the build directory
+WorkingDirectory={{ llama_cpp_build_dir }}
+
+# The command to start the server
+ExecStart={{ llama_cpp_build_dir }}/bin/llama-server --rpc {{ llama_server_rpc_endpoints }} -m {{ llama_cpp_models_dir }}/{{ llama_server_model }} -ngl 99 --no-repack --host 0.0.0.0 --port {{ llama_server_port }} --temp 0.7  --min-p 0.0 --top-p 0.8 --top-k 20 --repeat-penalty 1.05  --jinja -c 32000 -v
+
+# Automatically restart the service if it fails
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

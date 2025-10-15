@@ -340,6 +340,7 @@ def control_configure(args):
         f"ansible-playbook -i {inventory_path} ansible/control_configure.yml "
         f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
     )
+    print(command)
     run_command(command, remote=args.remote)
     logging.info("Control node configuration complete.")
 
@@ -473,7 +474,7 @@ def ansible_test(args):
         f"source {venv_dir}/bin/activate && "
         f"cd {target_path} && "
         f"export ANSIBLE_LIBRARY='{module_path}' && "
-        f"molecule test -- -vvv"
+        f"molecule test"
     )
 
     run_command(command, remote=args.test_remote, remote_host_override=ANSIBLE_TESTING_HOST)
