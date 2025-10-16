@@ -1,9 +1,4 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-  changed_when: false
-
 - name: Install required packages
   ansible.builtin.apt:
     name:
@@ -15,6 +10,7 @@
       - grub-efi-amd64-bin
       - ssh
     state: present
+    update_cache: true
 
 - name: Create TFTP and HTTP directories
   ansible.builtin.file:

@@ -1,0 +1,24 @@
+---
+- name: Prepare test instance for multi-arch
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Configure multi-arch support for amd64 packages
+      when: ansible_architecture != 'x86_64'
+      block:
+        - name: Restrict default Ubuntu sources to arm64
+          ansible.builtin.replace:
+            path: /etc/apt/sources.list.d/ubuntu.sources
+            regexp: '^(Components: .*)$'
+            replace: "\\1\nArchitectures: arm64"
+
+        - name: Add amd64 architecture
+          ansible.builtin.command:
+            cmd: dpkg --add-architecture amd64
+          changed_when: false
+
+        - name: Add repository for amd64 packages
+          ansible.builtin.apt_repository:
+            repo: "deb [arch=amd64] http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main restricted universe multiverse"
+            state: present
+            filename: amd64-multiarch

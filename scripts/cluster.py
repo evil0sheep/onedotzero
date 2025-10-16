@@ -474,7 +474,7 @@ def ansible_test(args):
         f"source {venv_dir}/bin/activate && "
         f"cd {target_path} && "
         f"export ANSIBLE_LIBRARY='{module_path}' && "
-        f"molecule test -- -vvv"
+        f"molecule test"
     )
 
     run_command(command, remote=args.test_remote, remote_host_override=ANSIBLE_TESTING_HOST)
@@ -621,7 +621,7 @@ def main():
     parser.add_argument(
         "--test-remote",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help="Execute commands on the remote host (default: True).",
     )
 

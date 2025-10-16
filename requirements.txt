@@ -5,3 +5,5 @@ ansible-lint
 molecule
 molecule-plugins[docker]
 yamllint
+molecule-vagrant
+requests==2.31.0
