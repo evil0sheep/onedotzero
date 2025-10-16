@@ -456,10 +456,9 @@ def ansible_test(args):
         venv_dir = "~/venvs/onedotzero"
     else:
         venv_dir = f'{PROJECT_ROOT}/.venv'
-    module_path = f"{venv_dir}/lib/python*/site-packages/molecule_vagrant/modules"
 
     # 1. Find the exact module path on the remote machine by searching for the 'modules' directory.
-    find_cmd = f"find {venv_dir}/lib/python*/site-packages/molecule_vagrant -name 'modules' -type d"
+    find_cmd = f"find {venv_dir}/lib/python*/site-packages/molecule_plugins/vagrant -name 'modules' -type d"
     proc = run_command(find_cmd, remote=args.test_remote, capture_output=True, remote_host_override=ANSIBLE_TESTING_HOST)
 
     # Take only the first line of output to be safe.
@@ -474,7 +473,7 @@ def ansible_test(args):
         f"source {venv_dir}/bin/activate && "
         f"cd {target_path} && "
         f"export ANSIBLE_LIBRARY='{module_path}' && "
-        f"molecule test"
+        f"molecule test -- -vvv"
     )
 
     run_command(command, remote=args.test_remote, remote_host_override=ANSIBLE_TESTING_HOST)

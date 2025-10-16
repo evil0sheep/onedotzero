@@ -10,6 +10,9 @@ else
   echo "Virtual environment already exists."
 fi
 
+echo "Upgrading pip."
+"$VENV_DIR/bin/pip" install --upgrade pip
+
 echo "Installing dependencies from requirements.txt..."
 "$VENV_DIR/bin/pip" install -r requirements.txt
 

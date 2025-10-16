@@ -4,9 +4,10 @@
     name:
       - molecule
       - "molecule-plugins[docker]"
-      - molecule-vagrant
+      - "molecule-plugins[vagrant]"
       - ansible-lint
       - netaddr
+      - requests==2.31.0
     state: present
     virtualenv: "~/venvs/onedotzero"
     virtualenv_command: "python3 -m venv"

@@ -117,7 +117,7 @@
         - sys
         - dev
         - sys/fs/cgroup
-      changed_when: false
+      changed_when: false # To satisfy molecule idempotence checks while also unmounting in the always block
 
     - name: Add golden_image_chroot host to inventory
       ansible.builtin.add_host:
