@@ -6,6 +6,7 @@ driver:
 platforms:
   - name: instance
     image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2404}-ansible:latest"
+    platform: linux/amd64
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
@@ -15,7 +16,6 @@ platforms:
 provisioner:
   name: ansible
   playbooks:
-    prepare: ../../../../../tests/molecule/shared/prepare.yml
     converge: ${MOLECULE_PLAYBOOK:-converge.yml}
   env:
     ANSIBLE_ROLES_PATH: ../../../../
