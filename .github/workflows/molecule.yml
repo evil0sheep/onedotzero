@@ -35,6 +35,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Run Ansible lint
+        run: |
+          ansible-lint
       - name: Run Molecule tests for ${{ matrix.molecule_test_path }}
         env:
           ANSIBLE_ALLOW_BROKEN_CONDITIONALS: true
