@@ -8,7 +8,7 @@
       {% endfor %}
       {{ endpoints | join(',') }}
 
-- name: install build deps
+- name: Install build deps
   ansible.builtin.apt:
     name:
       - cmake
@@ -87,5 +87,5 @@
   ansible.builtin.systemd:
     name: llama-server
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true

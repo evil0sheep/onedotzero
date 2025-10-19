@@ -9,4 +9,4 @@
       - python3-pip
       - python3-venv
     state: present
-    update_cache: yes
+    update_cache: true

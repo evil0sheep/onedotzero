@@ -5,10 +5,10 @@
   vars:
     service_name: llama-server
   tasks:
-    - name: Check if {{ service_name }} service is running
+    - name: Check if llama-server is running
       ansible.builtin.service_facts:
 
-    - name: Assert that the {{ service_name }} service is enabled
+    - name: Assert that the llama-server  service is enabled
       ansible.builtin.assert:
         that:
           - "ansible_facts.services['{{ service_name }}.service'] is defined"

@@ -12,7 +12,7 @@
     success_msg: "The llama-rpc-server service is enabled and running correctly."
 
 - name: Get startup logs from llama-rpc-server
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: "journalctl -u llama-rpc-server.service --no-pager"
   become: true
   changed_when: false
