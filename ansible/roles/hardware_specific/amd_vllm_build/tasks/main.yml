@@ -1,33 +1,30 @@
 ---
-- name: Check for existing ROCm torch installation
+- name: Check if the correct version of torch is installed
   ansible.builtin.command:
-    cmd: /opt/venvs/onedotzero/bin/pip freeze
-  register: pip_freeze_output
+    cmd: /opt/venvs/onedotzero/bin/pip show torch
+  register: torch_info
   changed_when: false
-  # We expect this to fail if torch isn't installed, which is fine.
-  ignore_errors: true
+  failed_when: false
+
+- name: Determine if torch needs to be updated
+  ansible.builtin.set_fact:
+    torch_needs_update: "{{ '+rocm6.4' not in torch_info.stdout }}"
 
 - name: Uninstall torch if it is not the ROCm version
   ansible.builtin.pip:
     name: torch
     state: absent
     virtualenv: "/opt/venvs/onedotzero"
-  when:
-    - pip_freeze_output.stdout is defined
-    - "'torch' in pip_freeze_output.stdout"
-    - "'+rocm' not in pip_freeze_output.stdout"
+  when: torch_needs_update
 
 - name: Install torch and torchvision for ROCm if not already installed
   ansible.builtin.pip:
     name:
       - torch
       - torchvision
-    extra_args: --no-cache-dir --index-url https://download.pytorch.org/whl/rocm6.1
+    extra_args: --no-cache-dir --index-url https://download.pytorch.org/whl/rocm6.4
     virtualenv: "/opt/venvs/onedotzero"
-  when:
-    - pip_freeze_output.stdout is not defined
-    - "'torch' not in pip_freeze_output.stdout"
-    - "'+rocm' not in pip_freeze_output.stdout"
+  when: torch_needs_update
 
 - name: Install build dependencies
   ansible.builtin.pip:
@@ -36,6 +33,7 @@
       - cmake < 4.0
       - wheel
       - pybind11
+      - setuptools
     virtualenv: "/opt/venvs/onedotzero"
 
 - name: Uninstall any existing Triton version

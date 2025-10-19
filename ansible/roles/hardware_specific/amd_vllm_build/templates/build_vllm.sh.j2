@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e # Exit immediately if a command exits with a non-zero status.
 
+# export PYTORCH_ROCM_ARCH=gfx1200
 export PYTORCH_ROCM_ARCH="{{ rocm_arch }}"
 export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 

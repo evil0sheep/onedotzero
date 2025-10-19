@@ -57,6 +57,15 @@
           (replace <username> with your actual username)
       when: sudo_check.rc != 0
 
+    - name: Stop the NFS server
+      ansible.builtin.service:
+        name: nfs-kernel-server
+        state: stopped
+      register: service_status
+      failed_when:
+        - service_status.failed
+        - "'not found' not in service_status.msg | lower"
+
     - name: Ensure chroot filesystems are unmounted
       ansible.builtin.include_role:
         name: control/chroot_connection_cleanup

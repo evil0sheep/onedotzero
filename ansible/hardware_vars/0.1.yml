@@ -26,14 +26,16 @@ llama_cpp_models:
 # llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
 llama_server_model: Mistral-Small-Instruct-2409-Q4_K_L.gguf
 
-hardware_compute_configure_roles: []
+hardware_compute_configure_roles:
+  - "hardware_specific/amd_vllm_build"
 
 hardware_control_configure_roles: []
 
 hardware_golden_image_roles:
   - "hardware_specific/amd_radeon_drivers"
-  - "hardware_specific/amd_llama_cpp_rpc_server"
+  # - "hardware_specific/amd_llama_cpp_rpc_server"
+  - "hardware_specific/amd_vllm_build"
 
 hardware_compute_test_roles:
   - "hardware_specific/amd_radeon_drivers"
-  - "hardware_specific/amd_llama_cpp_rpc_server"
+  # - "hardware_specific/amd_llama_cpp_rpc_server"

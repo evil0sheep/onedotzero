@@ -21,8 +21,7 @@
 
 - name: Run amdgpu-install
   ansible.builtin.command:
-    cmd: amdgpu-install -y --usecase=graphics,rocm,rocmdevtools,opencl,openclsdk
-  become: true
+    cmd: amdgpu-install -y --usecase=rocm,rocmdevtools
   register: amdgpu_install_result
   changed_when: "'0 upgraded, 0 newly installed, 0 to remove' not in amdgpu_install_result.stdout"
 

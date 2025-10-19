@@ -92,14 +92,14 @@
         name: dnsmasq
         state: restarted
 
-- name: Build and install LLM runtimes
-  hosts: "{{ target_host | default('localhost') }}"
-  become: true
-  vars_files:
-    - "vars/main.yml"
-    - "hardware_vars/{{ hardware_version }}.yml"
-  roles:
-    - control/llama_cpp_rpc_client
+# - name: Build and install LLM runtimes
+#   hosts: "{{ target_host | default('localhost') }}"
+#   become: true
+#   vars_files:
+#     - "vars/main.yml"
+#     - "hardware_vars/{{ hardware_version }}.yml"
+#   roles:
+#     - control/llama_cpp_rpc_client
 
 - name: Apply hardware-specific configurations
   hosts: "{{ target_host | default('localhost') }}"

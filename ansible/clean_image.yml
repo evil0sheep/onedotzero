@@ -3,10 +3,6 @@
   hosts: localhost
   become: true
   tasks:
-    - name: Ensure chroot filesystems are unmounted
-      ansible.builtin.include_role:
-        name: control/chroot_connection_cleanup
-
     - name: Stop and disable the NFS server
       ansible.builtin.service:
         name: nfs-kernel-server
@@ -16,6 +12,10 @@
       failed_when:
         - service_status.failed
         - "'not found' not in service_status.msg | lower"
+
+    - name: Ensure chroot filesystems are unmounted
+      ansible.builtin.include_role:
+        name: control/chroot_connection_cleanup
 
     - name: Remove the golden image directory
       ansible.builtin.file:
