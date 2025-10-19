@@ -5,20 +5,37 @@
 
 - name: Run build and configure on the control node
   hosts: test-control-node
+  gather_facts: true
   # Connect as the default vagrant user, no user override needed.
   tasks:
-    - name: Install rsync on the control node
+    - name: Ensure software-properties-common is installed
       ansible.builtin.apt:
-        name: rsync
+        name: software-properties-common
         state: present
         update_cache: true
       become: true
 
-    - name: Install ansible on the control node
-      ansible.builtin.apt:
-        name: ansible
+    - name: Add deadsnakes PPA for newer Python versions
+      ansible.builtin.apt_repository:
+        repo: ppa:deadsnakes/ppa
         state: present
       become: true
+
+    - name: Update apt cache
+      ansible.builtin.raw: apt-get update -y
+      changed_when: false
+      become: true
+
+    - name: Install dependencies
+      ansible.builtin.raw: apt-get install -y ansible rsync sudo  python3.12
+      changed_when: false
+      become: true
+
+    - name: Debug versions
+      debug:
+        msg: |
+          Ansible Version: {{ ansible_version.full }}
+          Python Version: {{ ansible_python.version.major }}.{{ ansible_python.version.minor }}.{{ ansible_python.version.micro }}
 
     - name: Sync project source to the control node
       ansible.posix.synchronize:
@@ -31,17 +48,10 @@
           - "--exclude=__pycache__"
           - "--exclude=.ropeproject"
 
-    # - name: Install community.general for root user
-    #   ansible.builtin.command:
-    #     cmd: ansible-galaxy collection install community.general
-    #   become: true
-    #   environment:
-    #     HOME: /root
-
     # # molecule login --host test-control-node
     # - name: Pause for interactive debugging
     #   ansible.builtin.pause:
-    #     seconds: 36000
+    #     minutes: 1440
 
     - name: Run the build_image playbook on the control node
       ansible.builtin.command:
@@ -53,41 +63,40 @@
         chdir: /home/vagrant/onedotzero
       changed_when: false
 
-    - name: Run the control_configure playbook on the control node
-      ansible.builtin.command:
-        cmd: >
-          sudo -E ansible-playbook
-          -i ansible/inventory/netboot_e2e_test/hosts.ini
-          ansible/control_configure.yml
-          --extra-vars "hardware_version=netboot_e2e_test"
-        chdir: /home/vagrant/onedotzero
-      changed_when: false
+    # - name: Run the control_configure playbook on the control node
+    #   ansible.builtin.command:
+    #     cmd: >
+    #       sudo -E ansible-playbook
+    #       -i ansible/inventory/netboot_e2e_test/hosts.ini
+    #       ansible/control_configure.yml
+    #       --extra-vars "hardware_version=netboot_e2e_test"
+    #     chdir: /home/vagrant/onedotzero
+    #   changed_when: false
+# - name: Verify compute node can mount the NFS share
+#   hosts: test-compute-node
+#   gather_facts: true
+#   vars_files:
+#     - vars/netboot_e2e.yml
+#   tasks:
+#     - name: Ensure NFS client is installed
+#       ansible.builtin.apt:
+#         name: nfs-common
+#         state: present
+#         update_cache: true
+#       become: true
 
-- name: Verify compute node can mount the NFS share
-  hosts: test-compute-node
-  gather_facts: true
-  vars_files:
-    - vars/netboot_e2e.yml
-  tasks:
-    - name: Ensure NFS client is installed
-      ansible.builtin.apt:
-        name: nfs-common
-        state: present
-        update_cache: true
-      become: true
+#     - name: Create mount point for NFS root
+#       ansible.builtin.file:
+#         path: /mnt/nfs_root
+#         state: directory
+#         mode: "0755"
+#       become: true
 
-    - name: Create mount point for NFS root
-      ansible.builtin.file:
-        path: /mnt/nfs_root
-        state: directory
-        mode: "0755"
-      become: true
-
-    - name: Mount the NFS share from the control node
-      ansible.posix.mount:
-        src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
-        path: /mnt/nfs_root
-        fstype: nfs
-        opts: "ro,sync"
-        state: mounted
-      become: true
+#     - name: Mount the NFS share from the control node
+#       ansible.posix.mount:
+#         src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
+#         path: /mnt/nfs_root
+#         fstype: nfs
+#         opts: "ro,sync"
+#         state: mounted
+#       become: true

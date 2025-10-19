@@ -1,7 +1,7 @@
 ---
 - name: Converge
   hosts: test-control-node
-  gather_facts: false
+  gather_facts: true
   tasks:
     - name: Update apt cache
       ansible.builtin.raw: apt-get update -y
@@ -10,6 +10,12 @@
     - name: Install dependencies
       ansible.builtin.raw: apt-get install -y ansible rsync sudo python3
       changed_when: false
+
+    - name: Debug versions
+      debug:
+        msg: |
+          Ansible Version: {{ ansible_version.full }}
+          Python Version: {{ ansible_python.version.major }}.{{ ansible_python.version.minor }}.{{ ansible_python.version.micro }}
 
     - name: Sync project source to the control node
       ansible.posix.synchronize:
