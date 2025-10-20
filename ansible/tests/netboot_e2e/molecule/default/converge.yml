@@ -57,7 +57,6 @@
       ansible.builtin.command:
         cmd: >
           sudo -E ansible-playbook
-          -i ansible/inventory/netboot_e2e_test/hosts.ini
           ansible/build_image.yml
           --extra-vars "hardware_version=netboot_e2e_test"
         chdir: /home/vagrant/onedotzero

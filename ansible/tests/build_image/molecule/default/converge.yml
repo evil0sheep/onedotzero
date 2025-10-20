@@ -33,7 +33,6 @@
       ansible.builtin.command:
         cmd: >
           ansible-playbook
-          -i ansible/inventory/build_image_test/hosts.ini
           ansible/build_image.yml
           --extra-vars "hardware_version=build_image_test"
         chdir: /root/onedotzero
