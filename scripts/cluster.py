@@ -39,6 +39,7 @@ DYN_INVENTORY_PATH = os.path.join(ANSIBLE_DIR, "inventory.dyn")
 DYN_INVENTORY_RELATIVE_PATH = "ansible/inventory.dyn"
 HARDWARE_VERSION_FILE = os.path.join(PROJECT_ROOT, ".hardware_version")
 ANSIBLE_TESTING_HOST = "odz_test"
+SSH_CONFIG_FILE = "~/.ssh/config"
 
 # Global var to hold hardware config
 HARDWARE_CONFIG = None
@@ -86,7 +87,7 @@ def run_command(
     if remote:
         command = command.replace("'", "'\\''")
         # The `exec` command ensures that ssh exits with the code of the remote command.
-        cmd_to_run = f"ssh {remote_host} 'cd {REMOTE_DIR} && {command}'"
+        cmd_to_run = f"ssh -F {SSH_CONFIG_FILE} {remote_host} 'cd {REMOTE_DIR} && {command}'"
     else:
         cmd_to_run = command
 
@@ -152,12 +153,9 @@ def generate_inventory():
 
 def get_broadcast_address(args):
     """Gets the broadcast address for the compute interface using Ansible."""
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
+
     command = (
         f"ansible-playbook ansible/get_broadcast.yml "
-        f"-i {inventory_path} "
         f"--extra-vars 'hardware_version={get_hardware_version()}'"
     )
     try:
@@ -185,12 +183,8 @@ def compute_up(args):
         return
 
     broadcast_address = get_broadcast_address(args)
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
     command = (
         f"ansible-playbook ansible/wol_up.yml "
-        f"-i {inventory_path} "
         f'--extra-vars \'{{"hardware_version": "{get_hardware_version()}", "broadcast_address": "{broadcast_address}"}}\''
     )
     print(command)
@@ -292,12 +286,12 @@ def compute_ssh(args):
 
     if args.remote:
         remote_host = HARDWARE_CONFIG.get("control_host", "control")
-        command = f"ssh -t {remote_host} 'ssh {node_name}'"
+        command = f"ssh -F {SSH_CONFIG_FILE} -t {remote_host} 'ssh {node_name}'"
         # For interactive SSH, we use os.system to hand over control
         print(f"Connecting to {node_name} via {remote_host}...")
         os.system(command)
     else:
-        command = f"ssh {node_name}"
+        command = f"ssh -F {SSH_CONFIG_FILE} {node_name}"
         print(f"Connecting to {node_name}...")
         os.system(command)
 
@@ -326,18 +320,16 @@ def control_ssh(args):
         return
 
     remote_host = HARDWARE_CONFIG.get("control_host", "control")
-    command = f"ssh -t {remote_host}"
+    print(f'FOOBAR {SSH_CONFIG_FILE}')
+    command = f"ssh -F {SSH_CONFIG_FILE} -t {remote_host}"
     print(f"Connecting to {remote_host}...")
     os.system(command)
 
 
 def control_configure(args):
     """Configures the control node using Ansible."""
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
     command = (
-        f"ansible-playbook -i {inventory_path} ansible/control_configure.yml "
+        f"ansible-playbook ansible/control_configure.yml "
         f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
     )
     print(command)
@@ -347,11 +339,9 @@ def control_configure(args):
 
 def control_test(args):
     """Tests the control node using Ansible."""
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
+
     command = (
-        f"ansible-playbook -i {inventory_path} ansible/control_test.yml "
+        f"ansible-playbook ansible/control_test.yml "
         f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
     )
     run_command(command, remote=args.remote)
@@ -360,12 +350,9 @@ def control_test(args):
 
 def control_build_image(args):
     """Builds the golden image using Ansible."""
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
     # we have to run this as sudo because the chroot connection requires it
     command = (
-        f"sudo -E ansible-playbook -i {inventory_path} ansible/build_image.yml "
+        f"sudo -E ansible-playbook ansible/build_image.yml "
         f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
     )
     run_command(command, remote=args.remote)
@@ -377,11 +364,8 @@ def control_build_image(args):
 def control_clean_image(args):
     """Removes the golden image on the control node."""
     logging.info("Removing golden image using ansible playbook...")
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
     command = (
-        f"ansible-playbook -i {inventory_path} ansible/clean_image.yml "
+        f"ansible-playbook ansible/clean_image.yml "
         f"--extra-vars 'hardware_version={get_hardware_version()}'"
     )
     run_command(command, remote=True)
@@ -395,11 +379,8 @@ def control_cmd(args):
 
 def ansible_testing_configure(args):
     """configures testing host"""
-    inventory_path = os.path.join(
-        "ansible/inventory", get_hardware_version(), "hosts.ini"
-    )
     command = (
-        f"ansible-playbook -i {inventory_path} ansible/testing_configure.yml "
+        f"ansible-playbook ansible/testing_configure.yml "
         f"--extra-vars 'hardware_version={get_hardware_version()}'"
     )
     run_command(command, remote=True, remote_host_override=ANSIBLE_TESTING_HOST)
@@ -742,18 +723,26 @@ def main():
         load_hardware_config(version)
         generate_inventory()
         if args.remote:
+
+            ssh_config_override = os.path.join(PROJECT_ROOT, ".ssh", "config")
+            if os.path.isfile(ssh_config_override):
+                print(f"Found ssh config override {ssh_config_override}.")
+                globals()["SSH_CONFIG_FILE"] = ssh_config_override
+            else:
+                print(f"Did not fine ssh config override {ssh_config_override}.")
+
             if args.command == "ansible":
                 remote_host = ANSIBLE_TESTING_HOST
             else:
                 remote_host = HARDWARE_CONFIG.get("control_host", "control")
 
-            mkdir_cmd = f"ssh {remote_host} 'mkdir -p ~/remote'"
+            mkdir_cmd = f"ssh -F {SSH_CONFIG_FILE} {remote_host} 'mkdir -p ~/remote'"
             subprocess.run(
                 mkdir_cmd, shell=True, check=True, capture_output=True, text=True
             )
 
             # Rsync is always checked because if it fails, nothing else will work.
-            rsync_cmd = f"rsync -avz --delete --exclude='.git' --exclude='.venv' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
+            rsync_cmd = f"rsync -e 'ssh -F {ssh_config_override}' -avz --delete --exclude='.git' --exclude='.venv' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
             logging.debug(
                 f"Running remote command, first syncing CWD with '{rsync_cmd}'"
             )
