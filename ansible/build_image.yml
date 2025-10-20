@@ -57,14 +57,16 @@
           (replace <username> with your actual username)
       when: sudo_check.rc != 0
 
+    - name: Gather NFS service facts
+      ansible.builtin.service_facts:
+
     - name: Stop the NFS server
       ansible.builtin.service:
         name: nfs-kernel-server
         state: stopped
-      register: service_status
-      failed_when:
-        - service_status.failed
-        - "'not found' not in service_status.msg | lower"
+      when: >
+        'nfs-kernel-server.service' in ansible_facts.services and
+        ansible_facts.services['nfs-kernel-server.service'].state == 'running'
 
     - name: Ensure chroot filesystems are unmounted
       ansible.builtin.include_role:
