@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+source {{ vllm_venv_path }}/bin/activate
+
+
+export VLLM_HOST_IP=$(ip -4 addr show {{ control_interface }} | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+# Check if we successfully found an IP
+if [ -z "$VLLM_HOST_IP" ]; then
+  echo "Could not find an IPv4 address for interface {{ control_interface }}" >&2
+  exit 1
+fi
+export RAY_NODE_IP_ADDRESS=$VLLM_HOST_IP
+
+export GLOO_SOCKET_IFNAME="{{ control_interface }}"
+export NCCL_SOCKET_IFNAME="{{ control_interface }}"
+export TP_SOCKET_IFNAME="{{ control_interface }}"
+
+
+ray start --address={{ control_node_ip }}:{{ vllm_ray_port }} --block

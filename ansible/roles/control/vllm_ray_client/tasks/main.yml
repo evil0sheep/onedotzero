@@ -38,7 +38,7 @@
       "{{ item['hf-repo'] }}"
       --local-dir "{{ vllm_models_dir }}/{{ item['hf-file'] }}"
       --local-dir-use-symlinks False
-    creates: "{{ vllm_models_dir }}/{{ item['hf-file'] }}"
+    # creates: "{{ vllm_models_dir }}/{{ item['hf-file'] }}/config.json"
   loop: "{{ vllm_models }}"
   loop_control:
     label: "{{ item['hf-file'] }}"

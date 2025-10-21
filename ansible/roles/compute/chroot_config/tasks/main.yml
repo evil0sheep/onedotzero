@@ -76,7 +76,7 @@
 - name: Configure overlayroot
   ansible.builtin.copy:
     content: |
-      overlayroot="tmpfs:swap=1,recurse=0"
+      overlayroot="tmpfs:swap=1,exclude=/opt/models"
     dest: /etc/overlayroot.conf
     mode: "0644"
 
@@ -87,6 +87,7 @@
       proc /proc proc defaults 0 0
       sysfs /sys sysfs defaults 0 0
     mode: "0644"
+# 192.168.10.1:/opt/models /opt/models nfs defaults 0 0
 
 - name: Update the initramfs in the chroot
   ansible.builtin.command: "update-initramfs -u"
