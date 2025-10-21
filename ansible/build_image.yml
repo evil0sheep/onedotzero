@@ -146,9 +146,9 @@
     roles_to_include:
       - common/docker
       - common/devtools
+      - common/vllm_source
       - compute/networkd_wol
       - compute/venv
-      - compute/vllm_source
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"

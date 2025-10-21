@@ -1,7 +1,12 @@
 ---
+- name: Create the vLLM virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ vllm_venv_path }}"
+    creates: "{{ vllm_venv_path }}/bin/pip"
+
 - name: Check if the correct version of torch is installed
   ansible.builtin.command:
-    cmd: /opt/venvs/onedotzero/bin/pip show torch
+    cmd: "{{ vllm_venv_path }}/bin/pip show torch"
   register: torch_info
   changed_when: false
   failed_when: false
@@ -14,7 +19,7 @@
   ansible.builtin.pip:
     name: torch
     state: absent
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
   when: torch_needs_update
 
 - name: Install torch and torchvision for ROCm if not already installed
@@ -23,7 +28,7 @@
       - torch
       - torchvision
     extra_args: --no-cache-dir --index-url https://download.pytorch.org/whl/rocm6.4
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
   when: torch_needs_update
 
 - name: Install build dependencies
@@ -34,13 +39,13 @@
       - wheel
       - pybind11
       - setuptools
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
 
 - name: Uninstall any existing Triton version
   ansible.builtin.pip:
     name: triton
     state: absent
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
 
 - name: Clone the Triton repository at a specific commit
   ansible.builtin.git:
@@ -61,12 +66,12 @@
   ansible.builtin.command:
     cmd: /tmp/build_triton.sh
     chdir: /usr/local/src/triton
-    creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/triton"
+    creates: "{{ vllm_venv_path }}/lib/python3.12/site-packages/triton"
 
 - name: Build and install AMD SMI from local source
   ansible.builtin.pip:
     name: /opt/rocm/share/amd_smi
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
 
 - name: Install and upgrade Python dependencies in the correct venv
   ansible.builtin.pip:
@@ -76,17 +81,17 @@
       - "huggingface-hub[cli,hf_transfer]"
       - setuptools_scm
     state: present
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
 
 - name: Install numpy with a version constraint
   ansible.builtin.pip:
     name: "numpy<2"
-    virtualenv: "/opt/venvs/onedotzero"
+    virtualenv: "{{ vllm_venv_path }}"
 
 - name: Install dependencies from requirements file
   ansible.builtin.pip:
     requirements: /usr/local/src/vllm/requirements/rocm.txt
-    executable: /opt/venvs/onedotzero/bin/pip
+    executable: "{{ vllm_venv_path }}/bin/pip"
 
 - name: Create vLLM build script on remote host
   ansible.builtin.template:
@@ -98,14 +103,4 @@
   ansible.builtin.command:
     cmd: /tmp/build_vllm.sh
     chdir: /usr/local/src/vllm
-    creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/vllm"
-#
-# - name: Build and install vLLM for ROCm
-#   ansible.builtin.command:
-#     cmd: /opt/venvs/onedotzero/bin/python3 setup.py develop
-#     chdir: /usr/local/src/vllm
-#     creates: "/opt/venvs/onedotzero/lib/python3.12/site-packages/vllm.egg-link" # To make the task idempotent
-#   become: true
-#   environment:
-#     PYTORCH_ROCM_ARCH: "{{ rocm_arch }}"
-#     CMAKE_ARGS: "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+    creates: "{{ vllm_venv_path }}/lib/python3.12/site-packages/vllm"

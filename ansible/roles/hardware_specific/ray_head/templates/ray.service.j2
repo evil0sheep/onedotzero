@@ -1,0 +1,18 @@
+[Unit]
+Description=Ray Head Service
+After=network.target
+
+[Service]
+# User running the Ray cluster
+# Consider creating a dedicated 'ray' user for production.
+User=root
+
+ExecStart={{ vllm_venv_path }}/bin/ray start --head --node-ip-address={{ control_node_ip }} --port={{ vllm_ray_port }} --block
+ExecStop={{ vllm_venv_path }}/bin/ray stop
+
+# Restart the service on failure to increase robustness.
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
