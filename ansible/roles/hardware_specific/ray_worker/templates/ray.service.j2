@@ -7,7 +7,7 @@ After=network.target
 # Consider creating a dedicated 'ray' user for production.
 User=root
 
-ExecStart={{ vllm_venv_path }}/bin/ray start --address={{ control_node_ip }}:{{ vllm_ray_port }} --block
+ExecStart=/opt/scripts/start_ray.sh
 ExecStop={{ vllm_venv_path }}/bin/ray stop
 
 # Restart the service on failure to increase robustness.

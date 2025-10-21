@@ -8,7 +8,7 @@ build_host: "build_0_1"
 # Interface on the control node facing the compute nodes
 compute_interface: "enx8cae4cf44e21"
 # Interface on the compute nodes facing the control node
-control_interface: enp6s0
+control_interface: enp5s0
 arch: "amd64"
 debootstrap_arch: "amd64"
 rocm_arch: "gfx1200"
@@ -31,15 +31,33 @@ llama_cpp_models:
 llama_server_model: Mistral-Small-Instruct-2409-Q4_K_L.gguf
 
 vllm_models:
-  - hf-repo: AMead10/Mistral-Small-Instruct-2409-awq
-    hf-file: Mistral-Small-Instruct-2409-awq
+  # - hf-repo: AMead10/Mistral-Small-Instruct-2409-awq
+  #   hf-file: Mistral-Small-Instruct-2409-awq
+  # - hf-repo: stelterlab/Mistral-Small-24B-Instruct-2501-AWQ
+  #   hf-file: Mistral-Small-24B-Instruct-2501-AWQ
+  # - hf-repo: Qwen/Qwen2.5-14B-Instruct-AWQ
+  #   hf-file: Qwen2.5-14B-Instruct-AWQ
+  # - hf-repo: Qwen/Qwen2.5-3B-Instruct
+  #   hf-file: Qwen2.5-3B-Instruct
+  - hf-repo: Qwen/Qwen3-4B-Instruct-2507
+    hf-file: Qwen3-4B-Instruct-2507
+  # - hf-repo: google/gemma-3-4b-it
+  #   hf-file: gemma-3-4b-it
 
 hardware_compute_configure_roles:
-  - "hardware_specific/amd_vllm_build"
+  # - "hardware_specific/amd_vllm_build"
   - "hardware_specific/ray_worker"
 
-hardware_control_configure_roles: []
+hardware_control_configure_roles:
+  # - "hardware_specific/amd_radeon_drivers"
+  # - "hardware_specific/amd_vllm_build"
+  - control/vllm_ray_client
+  - "hardware_specific/ray_head"
 
-hardware_golden_image_roles: []
+hardware_golden_image_roles:
+  - "hardware_specific/amd_radeon_drivers"
+  # - "hardware_specific/amd_llama_cpp_rpc_server"
+  - "hardware_specific/amd_vllm_build"
+  - "hardware_specific/ray_worker"
 
 hardware_compute_test_roles: []

@@ -7,6 +7,11 @@ After=network.target
 # Consider creating a dedicated 'ray' user for production.
 User=root
 
+Environment="VLLM_HOST_IP={{ control_node_ip }}"
+Environment="GLOO_SOCKET_IFNAME={{ compute_interface }}"
+Environment="NCCL_SOCKET_IFNAME={{ compute_interface }}"
+Environment="TP_SOCKET_IFNAME={{ compute_interface }}"
+
 ExecStart={{ vllm_venv_path }}/bin/ray start --head --node-ip-address={{ control_node_ip }} --port={{ vllm_ray_port }} --block
 ExecStop={{ vllm_venv_path }}/bin/ray stop
 
