@@ -1,0 +1,105 @@
+---
+- name: Install pipx
+  ansible.builtin.apt:
+    name:
+      - pipx
+    state: present
+    update_cache: true
+
+- name: Install huggingface_hub
+  ansible.builtin.command:
+    cmd: pipx install "huggingface_hub[cli]"
+  changed_when: false
+
+- name: Ensure pipx path
+  ansible.builtin.command:
+    cmd: pipx ensurepath
+  changed_when: false
+
+- name: Create model directory
+  ansible.builtin.file:
+    path: "{{ vllm_models_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create model subdirectories
+  ansible.builtin.file:
+    path: "{{ vllm_models_dir }}/{{ item['hf-file'] }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ vllm_models }}"
+  loop_control:
+    label: "{{ item['hf-file'] }}"
+
+- name: Download models
+  ansible.builtin.command:
+    cmd: >-
+      /root/.local/bin/huggingface-cli download
+      "{{ item['hf-repo'] }}"
+      --local-dir "{{ vllm_models_dir }}/{{ item['hf-file'] }}"
+      --local-dir-use-symlinks False
+    creates: "{{ vllm_models_dir }}/{{ item['hf-file'] }}"
+  loop: "{{ vllm_models }}"
+  loop_control:
+    label: "{{ item['hf-file'] }}"
+
+- name: Install build deps
+  ansible.builtin.apt:
+    name:
+      - cmake
+      - gcc-12
+      - g++-12
+      - libnuma-dev
+      - python3-dev
+      - python3
+    state: present
+    update_cache: true
+
+- name: Install and set gcc-12 as the default alternative
+  community.general.alternatives:
+    name: gcc
+    path: /usr/bin/gcc-12
+    priority: 10
+    link: /usr/bin/gcc
+    slaves:
+      - name: g++
+        link: /usr/bin/g++
+        path: /usr/bin/g++-12
+
+- name: Create the vLLM virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ vllm_venv_path }}"
+    creates: "{{ vllm_venv_path }}/bin/pip"
+
+- name: Install and upgrade Python dependencies in the venv
+  ansible.builtin.pip:
+    name:
+      - numba
+      - scipy
+      - "huggingface-hub[cli,hf_transfer]"
+      - setuptools_scm
+      - ray
+    state: present
+    virtualenv: "{{ vllm_venv_path }}"
+
+- name: Install dependencies from cpu requirements file
+  ansible.builtin.pip:
+    requirements: /usr/local/src/vllm/requirements/cpu.txt
+    executable: "{{ vllm_venv_path }}/bin/pip"
+    extra_args: "--extra-index-url https://download.pytorch.org/whl/cpu"
+
+- name: Install dependencies from cpu-build requirements file
+  ansible.builtin.pip:
+    requirements: /usr/local/src/vllm/requirements/cpu-build.txt
+    executable: "{{ vllm_venv_path }}/bin/pip"
+    extra_args: "--extra-index-url https://download.pytorch.org/whl/cpu"
+
+- name: Install VLLM with custom options
+  ansible.builtin.pip:
+    name: .
+    virtualenv: "{{ vllm_venv_path }}"
+    chdir: "{{ vllm_source_path }}" # Set the working directory for this task
+    extra_args: "--no-build-isolation"
+  # environment:
+  #   VLLM_TARGET_DEVICE: "cpu"
+  become: true

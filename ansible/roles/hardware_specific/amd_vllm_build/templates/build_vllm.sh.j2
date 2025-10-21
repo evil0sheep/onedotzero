@@ -5,7 +5,7 @@ set -e # Exit immediately if a command exits with a non-zero status.
 export PYTORCH_ROCM_ARCH="{{ rocm_arch }}"
 export CMAKE_ARGS="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
-source /opt/venvs/onedotzero/bin/activate
+source {{ vllm_venv_path }}/bin/activate
 
 python3 setup.py develop
 

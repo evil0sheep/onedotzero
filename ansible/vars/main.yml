@@ -7,3 +7,8 @@ llama_server_port: 8080
 llama_cpp_models_dir: /opt/models/llama_cpp
 llama_cpp_source_dir: /usr/local/src/llama.cpp
 llama_cpp_build_dir: "{{ llama_cpp_source_dir }}/build-rpc-rocm"
+
+vllm_models_dir: /opt/models/vllm
+vllm_venv_path: /opt/venvs/vllm
+vllm_source_path: /usr/local/src/vllm
+vllm_ray_port: 6379

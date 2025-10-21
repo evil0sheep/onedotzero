@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e # Exit immediately if a command exits with a non-zero status.
 
-source /opt/venvs/onedotzero/bin/activate
+source {{ vllm_venv_path }}/bin/activate
 
 if [ ! -f setup.py ]; then cd python; fi
 

@@ -39,7 +39,7 @@ DYN_INVENTORY_PATH = os.path.join(ANSIBLE_DIR, "inventory.dyn")
 DYN_INVENTORY_RELATIVE_PATH = "ansible/inventory.dyn"
 HARDWARE_VERSION_FILE = os.path.join(PROJECT_ROOT, ".hardware_version")
 ANSIBLE_TESTING_HOST = "odz_test"
-SSH_CONFIG_FILE = "~/.ssh/config"
+SSH_CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".ssh", "config")
 
 # Global var to hold hardware config
 HARDWARE_CONFIG = None
@@ -320,7 +320,6 @@ def control_ssh(args):
         return
 
     remote_host = HARDWARE_CONFIG.get("control_host", "control")
-    print(f'FOOBAR {SSH_CONFIG_FILE}')
     command = f"ssh -F {SSH_CONFIG_FILE} -t {remote_host}"
     print(f"Connecting to {remote_host}...")
     os.system(command)
@@ -728,8 +727,6 @@ def main():
             if os.path.isfile(ssh_config_override):
                 print(f"Found ssh config override {ssh_config_override}.")
                 globals()["SSH_CONFIG_FILE"] = ssh_config_override
-            else:
-                print(f"Did not fine ssh config override {ssh_config_override}.")
 
             if args.command == "ansible":
                 remote_host = ANSIBLE_TESTING_HOST
@@ -742,7 +739,7 @@ def main():
             )
 
             # Rsync is always checked because if it fails, nothing else will work.
-            rsync_cmd = f"rsync -e 'ssh -F {ssh_config_override}' -avz --delete --exclude='.git' --exclude='.venv' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
+            rsync_cmd = f"rsync -e 'ssh -F {SSH_CONFIG_FILE}' -avz --delete --exclude='.git' --exclude='.venv' {PROJECT_ROOT}/ {remote_host}:{REMOTE_DIR}"
             logging.debug(
                 f"Running remote command, first syncing CWD with '{rsync_cmd}'"
             )
