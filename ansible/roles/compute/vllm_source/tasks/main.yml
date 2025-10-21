@@ -1,8 +1,8 @@
 ---
 - name: Clone vLLM repository to a specific version
   ansible.builtin.git:
-    repo: "https://github.com/vllm-project/vllm.git"
+    repo: "https://github.com/evil0sheep/vllm.git"
     dest: /usr/local/src/vllm
-    version: be067861c
+    version: chroot_build_fixes
     force: true
     update: false # Ensures we stay at the specified commit
