@@ -8,7 +8,7 @@
 
 - name: Create NFS root directory
   ansible.builtin.file:
-    path: /srv/nfs/ubuntu_golden
+    path: "{{ golden_image_build_dir }}"
     state: directory
     mode: "0755"
 

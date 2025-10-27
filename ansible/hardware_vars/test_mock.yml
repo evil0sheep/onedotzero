@@ -1,0 +1,22 @@
+---
+control_host: "control_test_mock"
+compute_interface: mock0
+control_interface: mock0
+arch: "amd64"
+debootstrap_arch: "amd64"
+rocm_arch: "gfx1200"
+
+compute_nodes:
+  - mac: "08:00:27:00:00:01" # Dummy MAC for dnsmasq config
+    ip: "192.168.200.100"
+    name: "compute-node"
+
+llama_cpp_models: []
+llama_server_model: Mistral-Small-Instruct-2409-Q4_K_L.gguf
+
+vllm_models: []
+
+hardware_compute_configure_roles: []
+hardware_control_configure_roles: []
+hardware_golden_image_roles: []
+hardware_compute_test_roles: []

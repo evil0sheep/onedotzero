@@ -16,11 +16,11 @@ This document describes the technical implementation for PXE booting the cluster
 
 The entire process is automated by the `nfs_server` Ansible role. It prepares a golden image that is pre-configured to boot into a stateless overlay environment.
 
-1.  **Golden Image Creation:** A minimal Ubuntu 24.04 filesystem is created in `/srv/nfs/ubuntu_golden` on the control node using `debootstrap`.
+1.  **Golden Image Creation:** A minimal Ubuntu 24.04 filesystem is created in `{{ golden_image_build_dir }}` on the control node using `debootstrap`.
 
 2.  **Package Installation:** The `overlayroot` package, along with other essentials like the kernel and SSH server, are installed directly into the golden image using `chroot`.
 
-3.  **Configuration:** The `overlayroot` package is configured by creating the file `/srv/nfs/ubuntu_golden/etc/overlayroot.conf` with the following content:
+3.  **Configuration:** The `overlayroot` package is configured by creating the file `{{ golden_image_build_dir }}/etc/overlayroot.conf` with the following content:
     ```
     overlayroot="tmpfs:swap=1,recurse=0"
     ```
@@ -30,7 +30,7 @@ The entire process is automated by the `nfs_server` Ansible role. It prepares a 
 
 5.  **PXE Boot Configuration:** The GRUB configuration file, located at `/srv/tftp/boot/grub/grub.cfg`, is templated with the correct kernel parameters to enable the NFS boot. The kernel command line includes:
     -   `root=/dev/nfs`: Tells the kernel to use an NFS mount as its root.
-    -   `nfsroot=<control_node_ip>:/srv/nfs/ubuntu_golden`: Specifies the path to the golden image.
+    -   `nfsroot=<control_node_ip>:{{ golden_image_nfs_dir }}`: Specifies the path to the golden image.
     -   `overlayroot=tmpfs`: This parameter explicitly enables the `overlayroot` functionality that was built into the initramfs.
 
 ---

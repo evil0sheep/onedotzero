@@ -1,30 +1,30 @@
 ---
 - name: Unmount chroot /proc
   ansible.posix.mount:
-    path: /srv/nfs/ubuntu_golden/proc
+    path: "{{ golden_image_build_dir }}/proc"
     state: unmounted
   changed_when: false
 
 - name: Unmount chroot /dev/pts
   ansible.posix.mount:
-    path: /srv/nfs/ubuntu_golden/dev/pts
+    path: "{{ golden_image_build_dir }}/dev/pts"
     state: unmounted
   changed_when: false
 
 - name: Unmount chroot /dev
   ansible.posix.mount:
-    path: /srv/nfs/ubuntu_golden/dev
+    path: "{{ golden_image_build_dir }}/dev"
     state: unmounted
   changed_when: false
 
 - name: Unmount chroot /sys/fs/cgroup
   ansible.posix.mount:
-    path: /srv/nfs/ubuntu_golden/sys/fs/cgroup
+    path: "{{ golden_image_build_dir }}/sys/fs/cgroup"
     state: unmounted
   changed_when: false
 
 - name: Unmount chroot /sys
   ansible.posix.mount:
-    path: /srv/nfs/ubuntu_golden/sys
+    path: "{{ golden_image_build_dir }}/sys"
     state: unmounted
   changed_when: false

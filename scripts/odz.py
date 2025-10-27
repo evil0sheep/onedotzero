@@ -27,7 +27,7 @@ import shlex
 
 # Configure logging
 logging.basicConfig(
-    level=logging.WARN, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 # --- Configuration ---
@@ -39,6 +39,7 @@ DYN_INVENTORY_PATH = os.path.join(ANSIBLE_DIR, "inventory.dyn")
 DYN_INVENTORY_RELATIVE_PATH = "ansible/inventory.dyn"
 HARDWARE_VERSION_FILE = os.path.join(PROJECT_ROOT, ".hardware_version")
 ANSIBLE_TESTING_HOST = "odz_test"
+ANSIBLE_BUILD_HOST = "odz_build"
 SSH_CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".ssh", "config")
 
 # Global var to hold hardware config
@@ -62,11 +63,10 @@ def get_hardware_version():
 
 def load_hardware_config(version):
     """Loads the hardware configuration for the given version."""
-    global HARDWARE_CONFIG
     config_path = os.path.join(ANSIBLE_DIR, "hardware_vars", f"{version}.yml")
     try:
         with open(config_path, "r") as f:
-            HARDWARE_CONFIG = yaml.safe_load(f)
+            return yaml.safe_load(f)
     except FileNotFoundError:
         logging.error(
             f"Hardware config file not found for version '{version}' at {config_path}"
@@ -346,29 +346,52 @@ def control_test(args):
     run_command(command, remote=args.remote)
     logging.info("Control node testing complete.")
 
-
-def control_build_image(args):
+def image_build(args):
     """Builds the golden image using Ansible."""
-    # we have to run this as sudo because the chroot connection requires it
+    logging.info("Building golden image")
     command = (
-        f"sudo -E ansible-playbook ansible/build_image.yml "
-        f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
+        f"ansible-playbook ansible/build_image.yml "
+        f"--extra-vars 'hardware_version={args.hardware_version}' --become"
     )
-    run_command(command, remote=args.remote)
-    logging.info("Golden image build complete.")
-    logging.info("Fixing .ansible directory ownership...")
-    run_command("sudo chown -R $USER:$USER $HOME/.ansible", remote=args.remote)
+    run_command(command, remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
 
 
-def control_clean_image(args):
+    # we have to run this as sudo because the chroot connection requires it
+    logging.info("Configuring golden image")
+    command = (
+        f"sudo -E ansible-playbook ansible/golden_image_configure.yml "
+        f"--extra-vars 'hardware_version={args.hardware_version}' --become"
+    )
+    run_command(command, remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
+
+
+
+def image_clean(args):
     """Removes the golden image on the control node."""
     logging.info("Removing golden image using ansible playbook...")
     command = (
         f"ansible-playbook ansible/clean_image.yml "
-        f"--extra-vars 'hardware_version={get_hardware_version()}'"
+        f"--extra-vars 'hardware_version={args.hardware_version}'"
     )
-    run_command(command, remote=True)
+    run_command(command, remote=True, remote_host_override=ANSIBLE_BUILD_HOST)
     logging.info("Golden image removed.")
+
+def image_copy(args):
+    """Copies hardware image for given hardware version to control host for that hardware version"""
+
+    hw_config = load_hardware_config(args.hardware_version)
+    control_host = hw_config.get("control_host", "control")
+    rsync_cmd = (
+        f"rsync -e 'ssh -F {SSH_CONFIG_FILE}' -avz --delete "
+        f"--exclude='proc' --exclude='sys' --exclude='dev'"
+        f"{ANSIBLE_BUILD_HOST}/build/{args.hardware_version}/ubuntu_golden "
+        f"{control_host}:/srv/nfs/ubuntu_golden"
+    )
+
+    print(f"{rsync_cmd}")
+    subprocess.run(
+        rsync_cmd, shell=True, check=True, capture_output=True, text=True
+    )
 
 
 def control_cmd(args):
@@ -665,21 +688,15 @@ def main():
     control_subparsers.add_parser(
         "test", help="Run Ansible tests on the control node."
     ).set_defaults(func=control_test)
-    control_subparsers.add_parser(
-        "build_image", help="Build the golden image."
-    ).set_defaults(func=control_build_image)
     cmd_parser = control_subparsers.add_parser(
         "cmd", help="Execute a command on the control node."
     )
     cmd_parser.add_argument("command", type=str, help="The command to execute.")
     cmd_parser.set_defaults(func=control_cmd)
-
     control_subparsers.add_parser(
         "ssh", help="SSH into the control node."
     ).set_defaults(func=control_ssh)
-    control_subparsers.add_parser(
-        "clean_image", help="Removes the golden image on the control node."
-    ).set_defaults(func=control_clean_image)
+
 
     # Ansible commands
     ansible_parser = subparsers.add_parser("ansible", help="Manage ansible content.")
@@ -695,6 +712,27 @@ def main():
     )
     test_parser.add_argument("test_name", type=str, help="The test to run (e.g., 'e2e' or 'control/base').")
     test_parser.set_defaults(func=ansible_test)
+
+    image_parser = subparsers.add_parser("image", help="Build and manage golden images")
+    image_subparsers = image_parser.add_subparsers(dest="action", required=True)
+
+    image_build_parser = image_subparsers.add_parser(
+        "build", help="Build the golden image"
+    )
+    image_build_parser.add_argument("hardware_version", type=str, help="The hardware version to build the image for")
+    image_build_parser.set_defaults(func=image_build)
+
+    image_clean_parser = image_subparsers.add_parser(
+        "clean", help="clean the golden image"
+    )
+    image_clean_parser.add_argument("hardware_version", type=str, help="The hardware version to build the image for")
+    image_clean_parser.set_defaults(func=image_clean)
+
+    image_copy_parser = image_subparsers.add_parser(
+        "copy", help="copy the golden image to the control node"
+    )
+    image_copy_parser.add_argument("hardware_version", type=str, help="The hardware version to build the image for")
+    image_copy_parser.set_defaults(func=image_copy)
 
     # Hardware commands
     hardware_parser = subparsers.add_parser(
@@ -719,7 +757,8 @@ def main():
 
     if args.command not in ["doc", "hardware"]:
         version = get_hardware_version()
-        load_hardware_config(version)
+        global HARDWARE_CONFIG
+        HARDWARE_CONFIG = load_hardware_config(version)
         generate_inventory()
         if args.remote:
 
@@ -730,6 +769,8 @@ def main():
 
             if args.command == "ansible":
                 remote_host = ANSIBLE_TESTING_HOST
+            elif args.command == "image":
+                remote_host = ANSIBLE_BUILD_HOST
             else:
                 remote_host = HARDWARE_CONFIG.get("control_host", "control")
 

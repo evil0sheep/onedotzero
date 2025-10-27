@@ -1,0 +1,39 @@
+name: Golden Image Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Build and Configure Image
+        run: |
+          ansible-playbook ansible/build_image.yml --extra-vars 'hardware_version=test_mock' --become
+          sudo -E ansible-playbook ansible/golden_image_configure.yml --extra-vars 'hardware_version=test_mock' --become
+      - name: Package Image
+        run: |
+          tar -czf image-test-mock.tar.gz -C ~/build/test_mock/ubuntu_golden .
+      - name: Upload Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-test-mock
+          path: image-test-mock.tar.gz

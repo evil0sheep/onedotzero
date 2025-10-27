@@ -5,7 +5,7 @@
   tasks:
     - name: Search for the kernel image
       ansible.builtin.find:
-        paths: /srv/nfs/ubuntu_golden/boot
+        paths: "{{ golden_image_nfs_dir }}/boot"
         patterns: "vmlinuz-*"
       register: find_result
 
@@ -13,4 +13,4 @@
       ansible.builtin.assert:
         that:
           - find_result.matched > 0
-        fail_msg: "Kernel image (vmlinuz-*) not found in /srv/nfs/ubuntu_golden/boot"
+        fail_msg: "Kernel image (vmlinuz-*) not found in {{ golden_image_nfs_dir }}/boot"

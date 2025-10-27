@@ -93,7 +93,7 @@
 
 #     - name: Mount the NFS share from the control node
 #       ansible.posix.mount:
-#         src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
+#         src: "{{ control_node_ip }}:{{ golden_image_nfs_dir }}"
 #         path: /mnt/nfs_root
 #         fstype: nfs
 #         opts: "ro,sync"

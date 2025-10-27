@@ -25,4 +25,4 @@ fi
 # Now, execute the Python script, passing all command-line arguments to it.
 # 'exec' is used to replace the shell process with the Python process,
 # which is slightly more efficient.
-exec python3 "$PROJECT_ROOT/scripts/cluster.py" "$@"
+exec python3 "$PROJECT_ROOT/scripts/odz.py" "$@"
