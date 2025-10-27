@@ -1,23 +1,28 @@
 ---
-- name: Clean up and remove the golden image
-  hosts: localhost
-  become: true
+# Play 1: Gather SSH key from the user running the playbook
+- name: Set real user dir fact
+  hosts: "{{ target_host | default('localhost') }}"
+  become: false
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
   tasks:
-    - name: Stop and disable the NFS server
-      ansible.builtin.service:
-        name: nfs-kernel-server
-        state: stopped
-        enabled: false
-      register: service_status
-      failed_when:
-        - service_status.failed
-        - "'not found' not in service_status.msg | lower"
+    - name: Set real user dir fact
+      ansible.builtin.set_fact:
+        real_user_dir: "{{ ansible_env.HOME }}"
 
+- name: Clean up and remove the golden image
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
     - name: Ensure chroot filesystems are unmounted
       ansible.builtin.include_role:
         name: control/chroot_connection_cleanup
 
     - name: Remove the golden image directory
       ansible.builtin.file:
-        path: /srv/nfs/ubuntu_golden
+        path: "{{ golden_image_build_outer_dir }}"
         state: absent

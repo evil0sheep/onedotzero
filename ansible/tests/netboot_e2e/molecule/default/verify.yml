@@ -24,7 +24,7 @@
     - name: Check /etc/exports for the correct export
       ansible.builtin.lineinfile:
         path: /etc/exports
-        line: "/srv/nfs/ubuntu_golden {{ compute_subnet }}.0/24(ro,sync,no_subtree_check,no_root_squash)"
+        line: "{{ golden_image_nfs_dir }} {{ compute_subnet }}.0/24(ro,sync,no_subtree_check,no_root_squash)"
         state: present
       check_mode: true
 
@@ -35,7 +35,7 @@
     - name: Check that the NFS share is mounted
       ansible.posix.mount:
         path: /mnt/nfs_root
-        src: "{{ control_node_ip }}:/srv/nfs/ubuntu_golden"
+        src: "{{ control_node_ip }}:{{ golden_image_nfs_dir }}"
         fstype: nfs
         state: mounted
       check_mode: true

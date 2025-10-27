@@ -6,13 +6,13 @@ This document describes the hardware abstraction system built into this Ansible 
 
 ## System Overview
 
-The core principle of the system is the separation of configuration data from execution logic. This is achieved through a combination of the `scripts/cluster.py` orchestration script and Ansible's variable and inventory systems.
+The core principle of the system is the separation of configuration data from execution logic. This is achieved through a combination of the `scripts/odz.py` orchestration script and Ansible's variable and inventory systems.
 
 ### Components
 
-1.  **Hardware Switcher (`scripts/cluster.py`)**
-    -   The `cluster.py` script acts as the main user interface. It uses a state file, `.hardware_version` (which is git-ignored), to determine which hardware profile is currently active.
-    -   You **must** set the active hardware before running most commands using `python3 scripts/cluster.py hardware set <version>`.
+1.  **Hardware Switcher (`scripts/odz.py`)**
+    -   The `odz.py` script acts as the main user interface. It uses a state file, `.hardware_version` (which is git-ignored), to determine which hardware profile is currently active.
+    -   You **must** set the active hardware before running most commands using `python3 scripts/odz.py hardware set <version>`.
     -   When a command is run, the script reads the active version and passes it to Ansible, dynamically selecting the correct inventory and variable files.
 
 2.  **Hardware Variables (`ansible/hardware_vars/`)**
@@ -26,7 +26,7 @@ The core principle of the system is the separation of configuration data from ex
 3.  **Versioned Inventories (`ansible/inventory/`)**
     -   Each hardware version has a dedicated inventory directory (e.g., `ansible/inventory/0.1/`) containing a `hosts.ini` file.
     -   This file's only job is to define the `[control]` group, which points to the correct control node for that hardware version.
-    -   The `[compute]` group is generated dynamically by `cluster.py` from the hardware variables file.
+    -   The `[compute]` group is generated dynamically by `odz.py` from the hardware variables file.
 
 4.  **Dynamic Playbooks**
     -   Playbooks like `control_configure.yml` and `compute_configure.yml` are written to be generic.
@@ -76,9 +76,9 @@ Adding support for a new cluster is a straightforward process.
 You can now switch your local environment to target the new hardware:
 
 ```bash
-python3 scripts/cluster.py hardware set 0.2
+python3 scripts/odz.py hardware set 0.2
 ```
-All subsequent `cluster` commands will now target the v0.2 cluster.
+All subsequent `odz` commands will now target the v0.2 cluster.
 
 ---
 

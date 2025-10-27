@@ -34,6 +34,6 @@
         cmd: >
           ansible-playbook
           ansible/build_image.yml
-          --extra-vars "hardware_version=build_image_test"
+          --extra-vars "hardware_version=test_mock"
         chdir: /root/onedotzero
       changed_when: false

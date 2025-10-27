@@ -1,0 +1,77 @@
+---
+# Play 1: Gather SSH key from the user running the playbook
+- name: Gather local user SSH key
+  hosts: "{{ target_host | default('localhost') }}"
+  become: false
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Set real user dir fact
+      ansible.builtin.set_fact:
+        real_user_dir: "{{ ansible_env.HOME }}"
+
+    - name: Read SSH public key
+      ansible.builtin.slurp:
+        src: "{{ real_user_dir }}/.ssh/id_ed25519.pub"
+      register: ssh_public_key_slurp
+
+    - name: Set SSH public key fact
+      ansible.builtin.set_fact:
+        ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
+
+# Play 2: Update inventory
+- name: Insert Golden Image chroot host into inventory
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Add golden_image_chroot host to inventory
+      ansible.builtin.add_host:
+        name: golden_image_chroot
+        ansible_connection: chroot
+        ansible_host: "{{ golden_image_build_dir }}"
+        ssh_key_for_chroot: "{{ ssh_public_key }}"
+      changed_when: false
+
+# Play 3: Configure the golden image via chroot and cleanup
+- name: Configure golden image and cleanup
+  hosts: golden_image_chroot
+  become: true
+  vars:
+    real_user_dir: "{{ hostvars['localhost']['real_user_dir'] }}"
+    roles_to_include:
+      - common/docker
+      - common/devtools
+      - common/vllm_source
+      - compute/networkd_wol
+      - compute/venv
+  vars_files:
+    - "vars/main.yml"
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Configure chroot environment
+      block:
+        - name: Include chroot_config role
+          ansible.builtin.include_role:
+            name: compute/chroot_config
+        - name: Include hardware-agnostic golden image roles
+          ansible.builtin.include_role:
+            name: "{{ item }}"
+          loop: "{{ roles_to_include | default([]) }}"
+        - name: Include hardware-specific golden image roles
+          ansible.builtin.include_role:
+            name: "{{ item }}"
+          loop: "{{ hardware_golden_image_roles | default([]) }}"
+      always:
+        - name: Run chroot cleanup tasks on chroot
+          ansible.builtin.include_role:
+            name: compute/chroot_cleanup
+        - name: Run chroot cleanup tasks on localhost
+          become: true
+          block:
+            - name: Include chroot_connection_cleanup role on localhost
+              ansible.builtin.include_role:
+                name: control/chroot_connection_cleanup

@@ -17,13 +17,13 @@
 
 - name: Find all kernel images in the NFS root
   ansible.builtin.find:
-    paths: /srv/nfs/ubuntu_golden/boot
+    paths: "{{ golden_image_nfs_dir }}/boot"
     patterns: "vmlinuz-*"
   register: pxe_boot_kernel_files
 
 - name: Fail if no kernel is found
   ansible.builtin.fail:
-    msg: "Could not find a kernel image in /srv/nfs/ubuntu_golden/boot"
+    msg: "Could not find a kernel image in {{ golden_image_nfs_dir }}/boot"
   when: pxe_boot_kernel_files.files | length == 0
 
 - name: Set latest_kernel_path fact
@@ -32,13 +32,13 @@
 
 - name: Find all initrd images in the NFS root
   ansible.builtin.find:
-    paths: /srv/nfs/ubuntu_golden/boot
+    paths: "{{ golden_image_nfs_dir }}/boot"
     patterns: "initrd.img-*"
   register: pxe_boot_initrd_files
 
 - name: Fail if no initrd is found
   ansible.builtin.fail:
-    msg: "Could not find an initrd image in /srv/nfs/ubuntu_golden/boot"
+    msg: "Could not find an initrd image in {{ golden_image_nfs_dir }}/boot"
   when: pxe_boot_initrd_files.files | length == 0
 
 - name: Set latest_initrd_path fact

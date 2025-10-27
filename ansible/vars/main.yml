@@ -1,6 +1,10 @@
 compute_subnet: 192.168.10
 control_node_ip: "{{ compute_subnet }}.1"
 
+golden_image_build_outer_dir: "{{ real_user_dir }}/build/{{ hardware_version }}"
+golden_image_build_dir: "{{ real_user_dir }}/build/{{ hardware_version }}/ubuntu_golden"
+golden_image_nfs_dir: "/srv/nfs/ubuntu_golden"
+
 llama_cpp_git_hash: c7be9feb
 llama_cpp_rpc_port: 50052
 llama_server_port: 8080

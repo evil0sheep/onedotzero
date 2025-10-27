@@ -22,7 +22,7 @@ The plan is for the compute nodes in each cluster to PXE boot a shared linux ima
 -   **Network:** Fully connected.
 
 # Workflow Description
-We will be working on my macbook editing files locally and then rsyncing them to the NUC and executing them remotely over SSH using the `cluster` command. if you run commands locally you will not have access to ansible or the compute nodes. use `cluster control cmd` to execute custom commands on the control node. Please feel free to run `cluster doc` or `cluster --help` for information on how to use this tool.
+We will be working on my macbook editing files locally and then rsyncing them to the NUC and executing them remotely over SSH using the `odz` command. if you run commands locally you will not have access to ansible or the compute nodes. use `odz control cmd` to execute custom commands on the control node. Please feel free to run `odz doc` or `odz --help` for information on how to use this tool.
 
 Please read each task in the todo list one-by-one and for each item think about what is most ambiguous about the task description and then ask disambiguating questions which clarify the goals and requirements. Once your questions have been answered you can proceed with the task and when you are done please stop and ask for review, and once approved you can check off that task with a ✅ at the beginning of the task description and proceed to the next task. If you run into problems PLEASE STOP and explain the problem so we can discuss solutions before continuing. DO NOT iterate non-interactively trying to solve a problem.
 
@@ -32,8 +32,8 @@ Please read each task in the todo list one-by-one and for each item think about 
   2. Make a new ansible role for vLLM which installs the vLLM server on the control node and configures it for tensor parallelisåm and expert parallelism based on the definition of `compute_nodes` in `ansible/hardware_vars/0.1.yml`. You should use `https://huggingface.co/AMead10/Mistral-Small-Instruct-2409-awq` for testing
 2. Misc cleanup
   * add `compute-node` to `127.0.0.1` line in `/etc/hosts` on compute nodes
-  * deduplicate inventory path resolution in `scripts/cluster.py`
-  * remove remote flag from cluster.py
+  * deduplicate inventory path resolution in `scripts/odz.py`
+  * remove remote flag from odz.py
   * dont setup test environment in test control node
   * make the `compute` user and ansible variable instead of hardcoding it everywhere
   * deduplicate stopping nfs and unmounting things between build_image and clean_image
