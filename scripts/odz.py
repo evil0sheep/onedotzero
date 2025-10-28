@@ -39,7 +39,6 @@ DYN_INVENTORY_PATH = os.path.join(ANSIBLE_DIR, "inventory.dyn")
 DYN_INVENTORY_RELATIVE_PATH = "ansible/inventory.dyn"
 HARDWARE_VERSION_FILE = os.path.join(PROJECT_ROOT, ".hardware_version")
 ANSIBLE_TESTING_HOST = "odz_test"
-ANSIBLE_BUILD_HOST = "odz_build"
 SSH_CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".ssh", "config")
 
 # Global var to hold hardware config
@@ -78,7 +77,7 @@ def run_command(
     command, remote=True, capture_output=False, check=True, suppress_errors=False, remote_host_override=None
 ):
     """Runs a command locally or remotely."""
-    remote_host = HARDWARE_CONFIG.get("control_host", "control")
+    remote_host = HARDWARE_CONFIG.get("control_host", "host_not_found")
 
     if remote_host_override:
         remote_host = remote_host_override
@@ -285,7 +284,7 @@ def compute_ssh(args):
         sys.exit(1)
 
     if args.remote:
-        remote_host = HARDWARE_CONFIG.get("control_host", "control")
+        remote_host = HARDWARE_CONFIG.get("control_host", "host_not_found")
         command = f"ssh -F {SSH_CONFIG_FILE} -t {remote_host} 'ssh {node_name}'"
         # For interactive SSH, we use os.system to hand over control
         print(f"Connecting to {node_name} via {remote_host}...")
@@ -319,7 +318,7 @@ def control_ssh(args):
         print("Already on the control node, no need to SSH.")
         return
 
-    remote_host = HARDWARE_CONFIG.get("control_host", "control")
+    remote_host = HARDWARE_CONFIG.get("control_host", "host_not_found")
     command = f"ssh -F {SSH_CONFIG_FILE} -t {remote_host}"
     print(f"Connecting to {remote_host}...")
     os.system(command)
@@ -350,22 +349,22 @@ def image_build(args):
     """Builds the golden image using Ansible."""
     logging.info("Building golden image")
     command = (
-        f"sudo -E ansible-playbook ansible/build_image.yml "
-        f"--extra-vars 'hardware_version={args.hardware_version}' --become"
+        f"ansible-playbook ansible/build_image.yml "
+        f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
     )
-    run_command(command, remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
+    run_command(command, remote=args.remote, remote_host_override=HARDWARE_CONFIG.get("build_host", "host_not_found"))
 
 
     # we have to run this as sudo because the chroot connection requires it
     logging.info("Configuring golden image")
     command = (
         f"sudo -E ansible-playbook ansible/golden_image_configure.yml "
-        f"--extra-vars 'hardware_version={args.hardware_version}' --become"
+        f"--extra-vars 'hardware_version={get_hardware_version()}' --become"
     )
-    run_command(command, remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
+    run_command(command, remote=args.remote, remote_host_override=HARDWARE_CONFIG.get("build_host", "host_not_found"))
 
     # workaround for being unable to run first playbook without sudo. debootstrap hangs when run as user
-    run_command("sudo chown -R $USER:$USER $HOME/.ansible", remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
+    run_command("sudo chown -R $USER:$USER $HOME/.ansible", remote=args.remote, remote_host_override=HARDWARE_CONFIG.get("build_host", "host_not_found"))
 
 
 
@@ -374,27 +373,21 @@ def image_clean(args):
     logging.info("Removing golden image using ansible playbook...")
     command = (
         f"ansible-playbook ansible/clean_image.yml "
-        f"--extra-vars 'hardware_version={args.hardware_version}'"
+        f"--extra-vars 'hardware_version={get_hardware_version()}'"
     )
-    run_command(command, remote=True, remote_host_override=ANSIBLE_BUILD_HOST)
+    run_command(command, remote=True, remote_host_override=HARDWARE_CONFIG.get("build_host", "host_not_found"))
     logging.info("Golden image removed.")
 
 def image_copy(args):
     """Copies hardware image for given hardware version to control host for that hardware version"""
 
-    hw_config = load_hardware_config(args.hardware_version)
-    control_host = hw_config.get("control_host", "control")
-    rsync_cmd = (
-        f"rsync -e 'ssh -F {SSH_CONFIG_FILE}' -avz --delete "
-        f"--exclude='proc' --exclude='sys' --exclude='dev'"
-        f"{ANSIBLE_BUILD_HOST}/build/{args.hardware_version}/ubuntu_golden "
-        f"{control_host}:/srv/nfs/ubuntu_golden"
+    logging.info("copying golden image using ansible playbook...")
+    command = (
+        f"ansible-playbook ansible/copy_image.yml "
+        f"--extra-vars 'hardware_version={get_hardware_version()}'"
     )
-
-    print(f"{rsync_cmd}")
-    subprocess.run(
-        rsync_cmd, shell=True, check=True, capture_output=True, text=True
-    )
+    run_command(command, remote=True, remote_host_override=HARDWARE_CONFIG.get("build_host", "host_not_found"))
+    logging.info("Golden image copied.")
 
 
 def control_cmd(args):
@@ -722,19 +715,16 @@ def main():
     image_build_parser = image_subparsers.add_parser(
         "build", help="Build the golden image"
     )
-    image_build_parser.add_argument("hardware_version", type=str, help="The hardware version to build the image for")
     image_build_parser.set_defaults(func=image_build)
 
     image_clean_parser = image_subparsers.add_parser(
         "clean", help="clean the golden image"
     )
-    image_clean_parser.add_argument("hardware_version", type=str, help="The hardware version to build the image for")
     image_clean_parser.set_defaults(func=image_clean)
 
     image_copy_parser = image_subparsers.add_parser(
         "copy", help="copy the golden image to the control node"
     )
-    image_copy_parser.add_argument("hardware_version", type=str, help="The hardware version to build the image for")
     image_copy_parser.set_defaults(func=image_copy)
 
     # Hardware commands
@@ -773,9 +763,9 @@ def main():
             if args.command == "ansible":
                 remote_host = ANSIBLE_TESTING_HOST
             elif args.command == "image":
-                remote_host = ANSIBLE_BUILD_HOST
+                remote_host = HARDWARE_CONFIG.get("build_host", "host_not_found")
             else:
-                remote_host = HARDWARE_CONFIG.get("control_host", "control")
+                remote_host = HARDWARE_CONFIG.get("control_host", "host_not_found")
 
             mkdir_cmd = f"ssh -F {SSH_CONFIG_FILE} {remote_host} 'mkdir -p ~/remote'"
             subprocess.run(

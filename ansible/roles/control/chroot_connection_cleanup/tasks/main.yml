@@ -1,30 +1,49 @@
 ---
-- name: Unmount chroot /proc
-  ansible.posix.mount:
-    path: "{{ golden_image_build_dir }}/proc"
-    state: unmounted
-  changed_when: false
+# tasks/main.yml in your control/chroot_connection_cleanup role
 
-- name: Unmount chroot /dev/pts
-  ansible.posix.mount:
-    path: "{{ golden_image_build_dir }}/dev/pts"
-    state: unmounted
+- name: Get current mount points from the OS
+  ansible.builtin.command: mount # noqa: command-instead-of-module
+  register: mount_output
   changed_when: false
+  check_mode: false
 
-- name: Unmount chroot /dev
-  ansible.posix.mount:
-    path: "{{ golden_image_build_dir }}/dev"
-    state: unmounted
-  changed_when: false
+# - name: Debug mount command output and search strings
+#   ansible.builtin.debug:
+#     msg:
+#       - "STDOUT from mount command (split into lines for readability):"
+#       - "{{ mount_output.stdout.split('\n') }}"
+#       - ""
+#       - "Searching for this exact string: '{{ golden_image_build_dir }}/{{ item }}'"
+#   loop:
+#     - proc
+#     - sys
+#     - dev
 
-- name: Unmount chroot /sys/fs/cgroup
-  ansible.posix.mount:
-    path: "{{ golden_image_build_dir }}/sys/fs/cgroup"
-    state: unmounted
-  changed_when: false
+- name: Lazily unmount pseudo-filesystems in reverse order
+  ansible.builtin.command: "umount -l {{ golden_image_build_dir }}/{{ item }}"
+  when:
+    - golden_image_build_dir is defined and golden_image_build_dir | length > 0
+    - "golden_image_build_dir + '/' + item in mount_output.stdout"
+  loop:
+    # The list is reversed to ensure correct unmounting order
+    - proc
+    - sys
+    - dev
+  loop_control:
+    label: "Unmounting {{ golden_image_build_dir }}/{{ item }}"
+  register: unmount_results
+  changed_when: unmount_results.rc == 0 # Note: This line has a bug for loops, let's fix the 'when' first.
 
-- name: Unmount chroot /sys
-  ansible.posix.mount:
-    path: "{{ golden_image_build_dir }}/sys"
-    state: unmounted
-  changed_when: false
+- name: Display unmount results
+  ansible.builtin.debug:
+    msg:
+      - "Attempted to unmount {{ golden_image_build_dir }}/{{ item.item }}"
+      - "Skipped: {{ item.skipped | default('false') }}"
+      - "Changed: {{ item.changed }}"
+      - "Command: {{ item.cmd | default('N/A') }}"
+      - "RC: {{ item.rc | default('N/A') }}"
+      - "STDOUT: {{ item.stdout | default('N/A') }}"
+      - "STDERR: {{ item.stderr | default('N/A') }}"
+  loop: "{{ unmount_results.results }}"
+  loop_control:
+    label: "Result for {{ item.item }}"

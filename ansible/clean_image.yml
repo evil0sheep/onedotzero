@@ -14,6 +14,7 @@
 - name: Clean up and remove the golden image
   hosts: "{{ target_host | default('localhost') }}"
   become: true
+  gather_facts: true
   vars_files:
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"

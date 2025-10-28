@@ -20,6 +20,50 @@
       ansible.builtin.set_fact:
         ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
 
+- name: Build golden_image chroot base image
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Install debootstrap dependencies
+      ansible.builtin.apt:
+        name:
+          - debootstrap
+        state: present
+        update_cache: true
+
+    - name: Create golden image build directory
+      ansible.builtin.file:
+        path: "{{ golden_image_build_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Run debootstrap to create Ubuntu 24.04 filesystem
+      ansible.builtin.command: "debootstrap --arch=amd64 noble {{ golden_image_build_dir }}"
+      args:
+        creates: "{{ golden_image_build_dir }}/etc/os-release"
+
+    - name: Copy host's resolv.conf for network access in chroot
+      ansible.builtin.copy:
+        src: /etc/resolv.conf
+        dest: "{{ golden_image_build_dir }}/etc/resolv.conf"
+        remote_src: true
+        mode: "0644"
+
+    - name: Mount pseudo-filesystems for chroot
+      ansible.posix.mount:
+        path: "{{ golden_image_build_dir }}/{{ item }}"
+        src: "/{{ item }}"
+        fstype: none
+        opts: bind
+        state: ephemeral
+      loop:
+        - proc
+        - sys
+        - dev
+
 # Play 2: Update inventory
 - name: Insert Golden Image chroot host into inventory
   hosts: "{{ target_host | default('localhost') }}"
@@ -53,6 +97,9 @@
   tasks:
     - name: Configure chroot environment
       block:
+        - name: Update apt cache
+          ansible.builtin.apt:
+            update_cache: true
         - name: Include chroot_config role
           ansible.builtin.include_role:
             name: compute/chroot_config
@@ -65,10 +112,8 @@
             name: "{{ item }}"
           loop: "{{ hardware_golden_image_roles | default([]) }}"
       always:
-        - name: Run chroot cleanup tasks on chroot
-          ansible.builtin.include_role:
-            name: compute/chroot_cleanup
         - name: Run chroot cleanup tasks on localhost
+          delegate_to: "{{ target_host | default('localhost') }}"
           become: true
           block:
             - name: Include chroot_connection_cleanup role on localhost

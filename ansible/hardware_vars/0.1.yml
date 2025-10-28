@@ -1,6 +1,10 @@
 ---
 # Hardware v0.1 Configuration
+
+# ssh hosts for remote execution. these must be defined in your ssh config and
+# they must point to the same physical host (though they can use different users)
 control_host: "control_0_1"
+build_host: "build_0_1"
 # Interface on the control node facing the compute nodes
 compute_interface: "enx8cae4cf44e21"
 # Interface on the compute nodes facing the control node
@@ -34,17 +38,8 @@ hardware_compute_configure_roles:
   - "hardware_specific/amd_vllm_build"
   - "hardware_specific/ray_worker"
 
-hardware_control_configure_roles:
-  - "hardware_specific/amd_radeon_drivers"
-  - "hardware_specific/amd_vllm_build"
-  - "hardware_specific/ray_head"
+hardware_control_configure_roles: []
 
-hardware_golden_image_roles:
-  - "hardware_specific/amd_radeon_drivers"
-  # - "hardware_specific/amd_llama_cpp_rpc_server"
-  - "hardware_specific/amd_vllm_build"
-  - "hardware_specific/ray_worker"
+hardware_golden_image_roles: []
 
-hardware_compute_test_roles:
-  - "hardware_specific/amd_radeon_drivers"
-  # - "hardware_specific/amd_llama_cpp_rpc_server"
+hardware_compute_test_roles: []
