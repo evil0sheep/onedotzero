@@ -64,7 +64,7 @@
 - name: Download models
   ansible.builtin.command:
     cmd: >-
-      /root/.local/bin/huggingface-cli download
+      "{{ ansible_user_dir }}/.local/bin/huggingface-cli download"
       "{{ item['hf-repo'] }}"
       "{{ item['hf-file'] }}"
       --local-dir "{{ llama_cpp_models_dir }}"

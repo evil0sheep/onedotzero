@@ -14,9 +14,17 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: "geerlingguy/docker-ubuntu2404-ansible:latest"
+      options: --privileged --cgroupns=host
+      volumes:
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
+      - name: Update Apt
+        run: |
+          apt-get update -y
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -29,11 +37,11 @@ jobs:
         run: |
           ansible-playbook ansible/build_image.yml --extra-vars 'hardware_version=test_mock' --become
           sudo -E ansible-playbook ansible/golden_image_configure.yml --extra-vars 'hardware_version=test_mock' --become
-      - name: Package Image
-        run: |
-          tar -czf image-test-mock.tar.gz -C ~/build/test_mock/ubuntu_golden .
-      - name: Upload Image Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: image-test-mock
-          path: image-test-mock.tar.gz
+      # - name: Package Image
+      #   run: |
+      #     tar -czf image-test-mock.tar.gz -C ~/build/test_mock/ubuntu_golden .
+      # - name: Upload Image Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: image-test-mock
+      #     path: image-test-mock.tar.gz

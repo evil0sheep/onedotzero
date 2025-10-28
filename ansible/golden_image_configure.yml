@@ -43,7 +43,6 @@
   vars:
     real_user_dir: "{{ hostvars['localhost']['real_user_dir'] }}"
     roles_to_include:
-      - common/docker
       - common/devtools
       - common/vllm_source
       - compute/networkd_wol

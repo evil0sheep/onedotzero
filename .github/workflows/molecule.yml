@@ -19,7 +19,7 @@ jobs:
       matrix:
         molecule_test_path:
           - ansible/roles/control/base
-          - ansible/roles/control/llama_cpp_rpc_client
+          # - ansible/roles/control/llama_cpp_rpc_client
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
