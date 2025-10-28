@@ -28,7 +28,7 @@ Host control_0_1 odz_build odz_test
 
 This can be any configuration you want for remote development or whatever, as long as the `Host` line is correct and you can ssh to the control node with `ssh control_0_1` (or `ssh control_0_2` for hardware 0.2)
 
-Note that there are 3 hostnames associated with the host. this uses the control node for building images and remote testing, but these can be different hosts (I do `odz_build` and `odz_test` as different users on the same machine to reduce conflicts when multitasking, but doing all three hosts to the same user/host is fine if you are doing one thing at a time)
+Note that there are 3 hostnames associated with the host. This uses the control node for building images and remote testing. Id recommend keeping all three of these aliases as a single host/user to start for simplicity.
 
 ## Init venv
 Run `scripts/init.sh` from the root of the project directory to create the python venv for `odz.py` and install the dependencies. You must source this venv before running `odz.py`. Alternative you can run `/bin/odz` which is an executable shell wrapper that sets up the venv
