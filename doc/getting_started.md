@@ -113,24 +113,22 @@ At this point the control node should be ready to netboot compute nodes. You als
 odz control ssh
 
 # run a command on the control node over SSH in the recently rsynced directory
-cluster control cmd "pwd && ls"
-
-# completely remove the golden image (including stopping everything exporting it)
-# note that you must run `cluster control build_image && cluster control configure` after this to recover the bootable state
-cluster control clean image
+odz control cmd "pwd && ls"
 ```
 
 # Compute Node Power Management
 
 ```bash
 # power on the compute nodes via WOL
-cluster compute up
+odz compute up
 
 # shutdown the compute nodes over ssh (requires them to have fully booted)
-cluster compute down
+odz compute down
 
 # restart compute nodes over SSH
-cluster compute restart
+odz compute restart
 ```
 
 # Testing
+
+If you make changes to anything in the `ansible` directory you should run `ansible-lint` before pushing since its fast. our integration testing strategy is to use github runners so the best way to run tests is to push to a branch that isnt `main` and open a pull request, which will automatically lint/build/test your changes in the PR UI.
