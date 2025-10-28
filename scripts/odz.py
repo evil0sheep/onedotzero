@@ -350,7 +350,7 @@ def image_build(args):
     """Builds the golden image using Ansible."""
     logging.info("Building golden image")
     command = (
-        f"ansible-playbook ansible/build_image.yml "
+        f"sudo -E ansible-playbook ansible/build_image.yml "
         f"--extra-vars 'hardware_version={args.hardware_version}' --become"
     )
     run_command(command, remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
@@ -363,6 +363,9 @@ def image_build(args):
         f"--extra-vars 'hardware_version={args.hardware_version}' --become"
     )
     run_command(command, remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
+
+    # workaround for being unable to run first playbook without sudo. debootstrap hangs when run as user
+    run_command("sudo chown -R $USER:$USER $HOME/.ansible", remote=args.remote, remote_host_override=ANSIBLE_BUILD_HOST)
 
 
 
