@@ -1,0 +1,53 @@
+---
+# Play 1: Gather SSH key from the user running the playbook
+- name: Set real user dir fact
+  hosts: "{{ target_host | default('localhost') }}"
+  become: false
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Set real user dir fact
+      ansible.builtin.set_fact:
+        real_user_dir: "{{ ansible_env.HOME }}"
+
+- name: Copy the golden image to the nfs directory
+  hosts: "{{ target_host | default('localhost') }}"
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars/main.yml
+    - "hardware_vars/{{ hardware_version }}.yml"
+  tasks:
+    - name: Ensure file systems are unmounted
+      ansible.builtin.import_role:
+        name: control/chroot_connection_cleanup
+
+    - name: Remove previous golden image from NFS directory
+      ansible.builtin.file:
+        path: "{{ golden_image_nfs_dir }}"
+        state: absent
+      become: true
+
+    - name: Recreate golden image NFS directory
+      ansible.builtin.file:
+        path: "{{ golden_image_nfs_dir }}"
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Copy the image using cp -a
+      ansible.builtin.command:
+        cmd: "cp -a {{ golden_image_build_dir }}/. {{ golden_image_nfs_dir }}/"
+      become: true
+      changed_when: false
+
+    # - name: Copy the image
+    #   ansible.posix.synchronize:
+    #     src: "{{ golden_image_build_dir }}/"
+    #     dest: "{{ golden_image_nfs_dir }}/"
+    #     rsync_opts:
+    #       - "--delete"
+    #       - "--archive"
+    #       - "--xattrs"
+    #       - "--hard-links"

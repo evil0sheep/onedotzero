@@ -69,6 +69,13 @@
   vars_files:
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"
+  pre_tasks:
+    - name: Debug golden_image_build_dir
+      ansible.builtin.debug:
+        var: golden_image_build_dir
+    - name: Debug golden_image_nfs_dir
+      ansible.builtin.debug:
+        var: golden_image_nfs_dir
   tasks:
     - name: Refresh network facts
       ansible.builtin.setup:

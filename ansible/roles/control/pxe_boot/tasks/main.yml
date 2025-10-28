@@ -36,6 +36,10 @@
     patterns: "initrd.img-*"
   register: pxe_boot_initrd_files
 
+- name: Debug found initrd files
+  ansible.builtin.debug:
+    var: pxe_boot_initrd_files.files
+
 - name: Fail if no initrd is found
   ansible.builtin.fail:
     msg: "Could not find an initrd image in {{ golden_image_nfs_dir }}/boot"

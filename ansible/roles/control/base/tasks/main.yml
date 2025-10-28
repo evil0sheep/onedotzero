@@ -19,8 +19,6 @@
     mode: "0755"
   loop:
     - /srv/tftp
-    - /srv/http
-    - /srv/http/ubuntu_golden
 
 - name: Configure SSH client for compute nodes
   ansible.builtin.blockinfile:

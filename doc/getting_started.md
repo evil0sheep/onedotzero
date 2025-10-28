@@ -8,25 +8,25 @@ This scripts in this project are designed to run on a laptop/workstation connect
 The core development tool is `scripts/odz.py` which is designed to abstract over different hardware versions and network conditions. In order to work, `odz.py` needs a few preconditions to be met:
 
 ## Set up SSH configs for hardware versions
-To use `scripts/odz.py` with hardware version 0.2 (4x Ryzen 395) you need an ssh config for `control_0_2` in `~/.ssh/config` (or wherever your ssh config is, if not here).
+To use `scripts/odz.py` with hardware version 0.2 (4x Ryzen 395) you need an ssh config for `control_0_2` and `build_0_2` in `~/.ssh/config` (or wherever your ssh config is, if not here).
 
 ```bash
-Host control_0_2 odz_build odz_test
-  HostName "<control node ip address>"
-  User "<control node user>"
-  Port "<control node port>"
+Host control_0_2 build_0_2 odz_test
+  HostName control_node_ip_address
+  User control_node_user
+  Port control_node_port
 ```
 
-My config for hardware 0.1 looks like this:
+My config for local development hardware 0.1 looks like this:
 
 ```bash
-Host control_0_1 odz_build odz_test
+Host control_0_1 build_0_1 odz_test
   HostName 192.168.8.99
   User forrest
   Port 22
 ```
 
-This can be any configuration you want for remote development or whatever, as long as the `Host` line is correct and you can ssh to the control node with `ssh control_0_1` (or `ssh control_0_2` for hardware 0.2)
+This can be any configuration you want for remote development or whatever, as long as the `Host` line is correct and you can ssh to the control node with `ssh control_0_2` and `ssh build_0_2`
 
 Note that there are 3 hostnames associated with the host. This uses the control node for building images and remote testing. Id recommend keeping all three of these aliases as a single host/user to start for simplicity.
 
@@ -86,14 +86,14 @@ odz hardware set 0.2
 
 # Building a bootable image:
 ```bash
-# build and configure the golden ubuntu image to serve to the 0.2 compute nodes
-odz image build 0.2
+# build and configure the golden ubuntu image to serve to the compute nodes
+odz image build
 
-# copy image to 0.2 control node for serving:
-odz image copy 0.2
+# copy image to control node for serving:
+odz image copy
 
-# perform a full clean of the 0.2 image
-odz image clean 0.2
+# perform a full clean of the image
+odz image clean
 ```
 
 
@@ -127,6 +127,34 @@ odz compute down
 
 # restart compute nodes over SSH
 odz compute restart
+```
+
+# steps to build and boot and image for the 0.2 hardware
+
+1. Configure control node and ssh connection as documented above
+2. fill in values for `ansible/hardware_vars/0.2.yml`
+3. source the venv and configure environment as documented above
+4. run the following sequence of commands:
+
+```bash
+odz hardware set 0.2
+# verify with: odz hardware get
+
+odz image build
+# verify with: ssh build_0_2 "ls ~/build/0.2/ubuntu_golden"
+
+odz image copy
+# verify with: ssh build_0_2 "sudo ls /srv/nfs/ubuntu_golden"
+
+
+# this will only work if you set `compute_interface` correctly in `ansible/hardware_vars/0.2.yml`
+odz control configure
+# test by powering on the compute node and seeing if it boots
+
+
+# these will only work if you fill out `compute_nodes` in `ansible/hardware_vars/0.2.yml`
+odz compute up
+odz compute ssh 0
 ```
 
 # Testing

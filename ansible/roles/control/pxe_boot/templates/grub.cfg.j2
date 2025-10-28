@@ -1,7 +1,7 @@
-set timeout=0
+set timeout=1
 set default=0
 
 menuentry "Ubuntu 24.04 NFS Boot" {
-    linux /boot/grub/vmlinuz root=/dev/nfs nfsroot={{ control_node_ip }}:{{ golden_image_nfs_dir }} ip=dhcp quiet splash overlayroot=tmpfs
+    linux /boot/grub/vmlinuz root=/dev/nfs nfsroot={{ control_node_ip }}:{{ golden_image_nfs_dir }} ip=dhcp debug overlayroot=tmpfs
     initrd /boot/grub/initrd
 }

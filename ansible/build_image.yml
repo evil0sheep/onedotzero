@@ -29,7 +29,7 @@
   vars_files:
     - vars/main.yml
     - "hardware_vars/{{ hardware_version }}.yml"
-  pre_tasks:
+  tasks:
     - name: Check for passwordless sudo
       ansible.builtin.command: sudo -n true
       register: sudo_check
@@ -67,42 +67,3 @@
         cmd: ansible-galaxy collection install community.crypto
         creates: "{{ ansible_user_dir }}/.ansible/collections/ansible_collections/community/crypto"
       changed_when: false
-
-  tasks:
-    - name: Install debootstrap dependencies
-      ansible.builtin.apt:
-        name:
-          - debootstrap
-        state: present
-        update_cache: true
-
-    - name: Create golden image build directory
-      ansible.builtin.file:
-        path: "{{ golden_image_build_dir }}"
-        state: directory
-        mode: "0755"
-
-    - name: Run debootstrap to create Ubuntu 24.04 filesystem
-      ansible.builtin.command: "debootstrap --arch=amd64 noble {{ golden_image_build_dir }}"
-      args:
-        creates: "{{ golden_image_build_dir }}/etc/os-release"
-
-    - name: Copy host's resolv.conf for network access in chroot
-      ansible.builtin.copy:
-        src: /etc/resolv.conf
-        dest: "{{ golden_image_build_dir }}/etc/resolv.conf"
-        remote_src: true
-        mode: "0644"
-
-    - name: Mount pseudo-filesystems for chroot
-      ansible.posix.mount:
-        path: "{{ golden_image_build_dir }}/{{ item }}"
-        src: "/{{ item }}"
-        fstype: none
-        opts: bind
-        state: ephemeral
-      loop:
-        - proc
-        - sys
-        - dev
-        - sys/fs/cgroup
