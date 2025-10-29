@@ -22,9 +22,15 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
-      - name: Update Apt
+      - name: "Patch APT Sources to use Azure Mirrors and update"
         run: |
-          apt-get update -y
+          # Use sed to replace the standard Ubuntu archives with the Azure mirrors.
+          # This is the key to preventing "Too Many Requests" errors with the ubunut apt servers
+          sudo sed -i 's#http://archive.ubuntu.com/ubuntu/#http://azure.archive.ubuntu.com/ubuntu/#' /etc/apt/sources.list.d/ubuntu.sources
+          sudo sed -i 's#http://security.ubuntu.com/ubuntu/#http://azure.archive.ubuntu.com/ubuntu/#' /etc/apt/sources.list.d/ubuntu.sources
+
+          sudo apt update -y
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

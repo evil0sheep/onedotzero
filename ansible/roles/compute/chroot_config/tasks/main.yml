@@ -2,11 +2,12 @@
 - name: Configure APT sources for chroot
   ansible.builtin.copy:
     dest: /etc/apt/sources.list
+    # hitting a ton of "Too Many Requests" errors on github CI with normal ubuntu URLS so us azure mirrors
     content: |
-      deb http://archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-      deb http://archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-      deb http://archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
-      deb http://archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu noble main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
     mode: "0644"
 
 - name: Update apt cache and upgrade system in chroot
@@ -14,22 +15,14 @@
     update_cache: true
     upgrade: dist
 
-# hitting apt rate limits here when i do this normally so shove some sleeps in there
-- name: Pause for 60 seconds to avoid apt rate limits
-  ansible.builtin.pause:
-    seconds: 60
-
 - name: Install base packages in chroot
   ansible.builtin.apt:
-    name: "{{ item }}"
+    name:
+      - linux-image-generic
+      - openssh-server
+      - nfs-common
+      - overlayroot
     state: present
-  loop:
-    - linux-image-generic
-    - openssh-server
-    - nfs-common
-    - overlayroot
-  loop_control:
-    pause: 30
 
 # User config
 - name: Ensure root .ssh directory exists in chroot
