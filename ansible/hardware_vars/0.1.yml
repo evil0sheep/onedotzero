@@ -22,13 +22,13 @@ compute_nodes:
     name: "compute1"
 
 llama_cpp_models:
-  - hf-repo: bartowski/Mistral-Small-Instruct-2409-GGUF
-    hf-file: Mistral-Small-Instruct-2409-Q4_K_L.gguf
+  # - hf-repo: bartowski/Mistral-Small-Instruct-2409-GGUF
+  #   hf-file: Mistral-Small-Instruct-2409-Q4_K_L.gguf
   - hf-repo: unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF
     hf-file: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
 
 # llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
-llama_server_model: Mistral-Small-Instruct-2409-Q4_K_L.gguf
+llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
 
 vllm_models:
   # - hf-repo: AMead10/Mistral-Small-Instruct-2409-awq
@@ -45,19 +45,21 @@ vllm_models:
   #   hf-file: gemma-3-4b-it
 
 hardware_compute_configure_roles:
+  - "hardware_specific/amd_llama_cpp_rpc_server"
   # - "hardware_specific/amd_vllm_build"
-  - "hardware_specific/ray_worker"
+  # - "hardware_specific/ray_worker"
 
 hardware_control_configure_roles:
+  - "control/llama_cpp_rpc_client"
   # - "hardware_specific/amd_radeon_drivers"
   # - "hardware_specific/amd_vllm_build"
-  - control/vllm_ray_client
-  - "hardware_specific/ray_head"
+  # - control/vllm_ray_client
+  # - "hardware_specific/ray_head"
 
 hardware_golden_image_roles:
-  - "hardware_specific/amd_radeon_drivers"
-  # - "hardware_specific/amd_llama_cpp_rpc_server"
-  - "hardware_specific/amd_vllm_build"
-  - "hardware_specific/ray_worker"
+  # - "hardware_specific/amd_radeon_drivers"
+  - "hardware_specific/amd_llama_cpp_rpc_server"
+  # - "hardware_specific/amd_vllm_build"
+  # - "hardware_specific/ray_worker"
 
 hardware_compute_test_roles: []
