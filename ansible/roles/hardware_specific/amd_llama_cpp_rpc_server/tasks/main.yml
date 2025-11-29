@@ -26,7 +26,7 @@
 
 - name: CMake Configure
   ansible.builtin.command:
-    cmd: cmake -S .. -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release
+    cmd: cmake -S .. -DGGML_RPC=ON -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release
     chdir: "{{ llama_cpp_build_dir }}"
   changed_when: false # CMake handles idempotence internally, always want to run
 
