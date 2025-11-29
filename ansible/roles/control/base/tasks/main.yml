@@ -42,3 +42,47 @@
 - name: Reset SSH connection to apply group changes
   ansible.builtin.meta: reset_connection
   when: ansible_virtualization_type != 'docker'
+
+- name: Stop and disable conflicting dhcpd service
+  ansible.builtin.systemd:
+    name: isc-dhcp-server
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Stop and disable conflicting tftpd service
+  ansible.builtin.systemd:
+    name: tftpd-hpa
+    state: stopped
+    enabled: false
+  ignore_errors: true
+
+- name: Disable systemd-resolved stub listener
+  become: true
+  block:
+    - name: Stop and disable systemd-resolved service
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
+
+    - name: Configure systemd-resolved to not use a stub listener
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: "^#?DNSStubListener="
+        line: "DNSStubListener=no"
+        create: true
+        mode: "0644"
+
+    - name: Ensure /etc/resolv.conf is a symlink to /run/systemd/resolve/resolv.conf
+      ansible.builtin.file:
+        src: /run/systemd/resolve/resolv.conf
+        dest: /etc/resolv.conf
+        state: link
+        force: true
+
+    - name: Restart systemd-resolved
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: restarted
+        enabled: true
