@@ -3,14 +3,17 @@
 control_host: "control_0_2"
 build_host: "build_0_2"
 # Interface on the control node facing the compute nodes
-compute_interface: eth0 # TODO(antti) change this, neccessary to configure pxe and stuff correctly
+compute_interface: br0 # TODO(antti) change this, neccessary to configure pxe and stuff correctly
 # Interface on the compute nodes facing the control node
 control_interface: eth0 # important for vllm stuff but not for initial boot
 arch: "amd64"
 debootstrap_arch: "amd64"
 rocm_arch: "gfx1151" # AFAIK this is correct for strix-halo
 
-compute_nodes: [] # << you shouldnt need entries here to boot, but need them to use ssh and wol commands
+compute_nodes:
+  - mac: "9c:bf:0d:00:e6:79"
+    ip: "{{ compute_subnet }}.103"
+    name: "compute3"
 
 llama_cpp_models: []
 llama_server_model: ""
