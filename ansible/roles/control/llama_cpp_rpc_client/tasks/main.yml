@@ -61,18 +61,27 @@
     owner: root
     group: root
 
+- name: Debug user directory variable
+  ansible.builtin.debug:
+    var: ansible_user_dir
+
 - name: Download models
   ansible.builtin.command:
+    # 1. Note the change from 'item' to 'model_item' here
     cmd: >-
-      "{{ ansible_user_dir }}/.local/bin/huggingface-cli download"
-      "{{ item['hf-repo'] }}"
-      "{{ item['hf-file'] }}"
+      "{{ ansible_user_dir }}/.local/bin/huggingface-cli" download
+      "{{ model_item['hf-repo'] }}"
+      "{{ model_item['hf-file'] }}"
       --local-dir "{{ llama_cpp_models_dir }}"
       --local-dir-use-symlinks False
-    creates: "{{ llama_cpp_models_dir }}/{{ item['hf-file'] }}"
+    # 2. And here
+    creates: "{{ llama_cpp_models_dir }}/{{ model_item['hf-file'] }}"
   loop: "{{ llama_cpp_models }}"
   loop_control:
-    label: "{{ item['hf-file'] }}"
+    # 3. This label is just for output readability
+    label: "{{ model_item['hf-file'] }}"
+    # 4. This defines the variable name to use above
+    loop_var: model_item
 
 - name: Create systemd unit file for llama.cpp server
   ansible.builtin.template:
