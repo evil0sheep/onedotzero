@@ -3,7 +3,7 @@
 control_host: "control_0_2"
 build_host: "build_0_2"
 # Interface on the control node facing the compute nodes
-compute_interface: enp1s0 # TODO(antti) change this, neccessary to configure pxe and stuff correctly
+compute_interface: br0 # TODO(antti) change this, neccessary to configure pxe and stuff correctly
 # Interface on the compute nodes facing the control node
 control_interface: enp191s0 # important for vllm stuff but not for initial boot
 arch: "amd64"
@@ -32,7 +32,14 @@ llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
 
 vllm_models: []
 
-hardware_compute_configure_roles: []
-hardware_control_configure_roles: []
-hardware_golden_image_roles: []
+hardware_compute_configure_roles:
+  - "hardware_specific/amd_llama_cpp_rpc_server"
+
+hardware_control_configure_roles:
+  - "control/llama_cpp_rpc_client"
+
+hardware_golden_image_roles:
+  - "hardware_specific/amd_radeon_drivers"
+  - "hardware_specific/amd_llama_cpp_rpc_server"
+
 hardware_compute_test_roles: []
