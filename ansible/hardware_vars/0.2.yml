@@ -3,9 +3,9 @@
 control_host: "control_0_2"
 build_host: "build_0_2"
 # Interface on the control node facing the compute nodes
-compute_interface: eth0 # TODO(antti) change this, neccessary to configure pxe and stuff correctly
+compute_interface: enp1s0 # TODO(antti) change this, neccessary to configure pxe and stuff correctly
 # Interface on the compute nodes facing the control node
-control_interface: eth0 # important for vllm stuff but not for initial boot
+control_interface: enp191s0 # important for vllm stuff but not for initial boot
 arch: "amd64"
 debootstrap_arch: "amd64"
 rocm_arch: "gfx1151" # AFAIK this is correct for strix-halo
