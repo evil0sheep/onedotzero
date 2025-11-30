@@ -40,8 +40,8 @@
         state: directory
         mode: "0755"
 
-    - name: Run debootstrap to create Ubuntu 24.04 filesystem
-      ansible.builtin.command: "debootstrap --arch=amd64 noble {{ golden_image_build_dir }}"
+    - name: Run debootstrap to create Ubuntu 25.04 filesystem
+      ansible.builtin.command: "debootstrap --arch=amd64 plucky {{ golden_image_build_dir }}"
       args:
         creates: "{{ golden_image_build_dir }}/etc/os-release"
 
@@ -90,7 +90,6 @@
       - common/devtools
       - common/vllm_source
       - compute/networkd_wol
-      - compute/venv
   vars_files:
     - "vars/main.yml"
     - "hardware_vars/{{ hardware_version }}.yml"

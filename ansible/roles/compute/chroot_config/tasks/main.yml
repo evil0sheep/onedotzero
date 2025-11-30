@@ -4,10 +4,10 @@
     dest: /etc/apt/sources.list
     # hitting a ton of "Too Many Requests" errors on github CI with normal ubuntu URLS so us azure mirrors
     content: |
-      deb http://azure.archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-      deb http://azure.archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-      deb http://azure.archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
-      deb http://azure.archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky-updates main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky-security main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky-backports main restricted universe multiverse
     mode: "0644"
 
 - name: Update apt cache and upgrade system in chroot
@@ -19,6 +19,7 @@
   ansible.builtin.apt:
     name:
       - linux-image-generic
+      - linux-firmware
       - openssh-server
       - nfs-common
       - overlayroot
@@ -72,6 +73,38 @@
     content: "compute-node"
     dest: /etc/hostname
     mode: "0644"
+
+- name: Add network drivers to initramfs modules
+  ansible.builtin.blockinfile:
+    path: /etc/initramfs-tools/modules
+    create: true
+    mode: "0644"
+    block: |
+      # USB Host Controllers (Required for USB Ethernet)
+      xhci_pci
+      xhci_hcd
+      ehci_pci
+
+      # USB Networking Stack
+      usbnet
+      cdc_ether
+      rndis_host
+
+      # Realtek USB (Framework / Dongles)
+      r8152
+      r8153_ecm
+
+      # Realtek PCIe (Standard Onboard)
+      r8169
+
+      # Intel / Broadcom / Mellanox (Common Server/Desktop NICs)
+      e1000e
+      igb
+      ixgbe
+      bnx2
+      bnx2x
+      mlx4_en
+      mlx5_core
 
 - name: Configure overlayroot
   ansible.builtin.copy:
