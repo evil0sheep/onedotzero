@@ -9,7 +9,7 @@
 
 - name: Download amdgpu-install package
   ansible.builtin.get_url:
-    url: https://repo.radeon.com/amdgpu-install/6.4.4/ubuntu/noble/amdgpu-install_6.4.60404-1_all.deb
+    url: https://repo.radeon.com/amdgpu-install/6.4.4/ubuntu/plucky/amdgpu-install_6.4.60404-1_all.deb
     dest: /tmp/amdgpu-install_6.4.60404-1_all.deb
     mode: "0644"
 

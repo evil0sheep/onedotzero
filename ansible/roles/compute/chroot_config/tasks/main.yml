@@ -4,10 +4,10 @@
     dest: /etc/apt/sources.list
     # hitting a ton of "Too Many Requests" errors on github CI with normal ubuntu URLS so us azure mirrors
     content: |
-      deb http://azure.archive.ubuntu.com/ubuntu noble main restricted universe multiverse
-      deb http://azure.archive.ubuntu.com/ubuntu noble-updates main restricted universe multiverse
-      deb http://azure.archive.ubuntu.com/ubuntu noble-security main restricted universe multiverse
-      deb http://azure.archive.ubuntu.com/ubuntu noble-backports main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky-updates main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky-security main restricted universe multiverse
+      deb http://azure.archive.ubuntu.com/ubuntu plucky-backports main restricted universe multiverse
     mode: "0644"
 
 - name: Update apt cache and upgrade system in chroot
