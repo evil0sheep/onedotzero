@@ -7,6 +7,7 @@
       - libvulkan-dev
       - glslang-tools
       - glslc
+      - vulkan-tools
     state: present
     update_cache: true
 

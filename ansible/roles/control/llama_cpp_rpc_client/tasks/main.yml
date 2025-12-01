@@ -69,11 +69,10 @@
   ansible.builtin.command:
     # 1. Note the change from 'item' to 'model_item' here
     cmd: >-
-      "{{ ansible_user_dir }}/.local/bin/huggingface-cli" download
+      "{{ ansible_user_dir }}/.local/bin/hf" download
       "{{ model_item['hf-repo'] }}"
       "{{ model_item['hf-file'] }}"
       --local-dir "{{ llama_cpp_models_dir }}"
-      --local-dir-use-symlinks False
     # 2. And here
     creates: "{{ llama_cpp_models_dir }}/{{ model_item['hf-file'] }}"
   loop: "{{ llama_cpp_models }}"
