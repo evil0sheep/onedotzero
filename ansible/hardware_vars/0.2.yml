@@ -10,10 +10,25 @@ arch: "amd64"
 debootstrap_arch: "amd64"
 rocm_arch: "gfx1151" # AFAIK this is correct for strix-halo
 
-compute_nodes: [] # << you shouldnt need entries here to boot, but need them to use ssh and wol commands
+compute_nodes:
+  - mac: "9c:bf:0d:00:e6:79"
+    ip: "192.168.10.104"
+    name: "node4"
+  - mac: "9c:bf:0d:00:ea:e4"
+    ip: "192.168.10.103"
+    name: "node3"
+  - mac: "9c:bf:0d:00:e3:86"
+    ip: "192.168.10.102"
+    name: "node2"
+  - mac: "9c:bf:0d:00:e7:9b"
+    ip: "192.168.10.101"
+    name: "node1"
 
-llama_cpp_models: []
-llama_server_model: ""
+llama_cpp_models:
+  - hf-repo: unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF
+    hf-file: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
+
+llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
 
 vllm_models: []
 
