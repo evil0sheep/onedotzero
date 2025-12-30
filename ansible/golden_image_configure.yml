@@ -21,6 +21,7 @@
         ssh_public_key: "{{ ssh_public_key_slurp['content'] | b64decode }}"
 
 - name: Build golden_image chroot base image
+
   hosts: "{{ target_host | default('localhost') }}"
   become: true
   vars_files:
@@ -39,6 +40,10 @@
         path: "{{ golden_image_build_dir }}"
         state: directory
         mode: "0755"
+
+    - name: Debug print golden image build directory
+      ansible.builtin.debug:
+        msg: "Golden image build dir is {{ golden_image_build_dir }}"
 
     - name: Run debootstrap to create Ubuntu 25.04 filesystem
       ansible.builtin.command: "debootstrap --arch=amd64 plucky {{ golden_image_build_dir }}"
@@ -63,6 +68,27 @@
         - proc
         - sys
         - dev
+
+    - name: Ensure /opt/assets exists in golden image - this to copy amduprof deb!
+      ansible.builtin.file:
+        path: "{{ golden_image_build_dir }}/opt/assets"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copy image assets into chroot
+      ansible.builtin.copy:
+        src: /opt/assets/
+        dest: "{{ golden_image_build_dir }}/opt/assets/"
+        remote_src: true
+
+    - name: Fix permissions on above copied assets
+      ansible.builtin.file:
+        path: "{{ golden_image_build_dir }}/opt/assets"
+        state: directory
+        recurse: true
+        mode: "0755"
 
 # Play 2: Update inventory
 - name: Insert Golden Image chroot host into inventory

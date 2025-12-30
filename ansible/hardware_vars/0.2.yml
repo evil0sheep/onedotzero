@@ -27,6 +27,8 @@ compute_nodes:
 llama_cpp_models:
   - hf-repo: unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF
     hf-file: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
+  - hf-repo: unsloth/Qwen3-Coder-480B-A35B-Instruct-GGUF
+    hf-file: Qwen3-Coder-480B-A35B-Instruct-Q4_K_M-00001-of-00006.gguf
 
 llama_server_model: Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf
 

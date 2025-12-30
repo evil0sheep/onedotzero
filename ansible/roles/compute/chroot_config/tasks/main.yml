@@ -125,3 +125,39 @@
 - name: Update the initramfs in the chroot
   ansible.builtin.command: "update-initramfs -u"
   changed_when: false
+
+# Profiling related tools
+- name: Install btop
+  ansible.builtin.apt:
+    name: btop
+    state: present
+
+- name: Install nvtop
+  ansible.builtin.apt:
+    name: nvtop
+    state: present
+
+- name: Install sensors
+  ansible.builtin.apt:
+    name: lm-sensors
+    state: present
+
+- name: Install bmon
+  ansible.builtin.apt:
+    name: bmon
+    state: present
+
+- name: Install tcptrack
+  ansible.builtin.apt:
+    name: tcptrack
+    state: present
+
+- name: Install perf
+  ansible.builtin.apt:
+    name: linux-perf
+    state: present
+
+- name: Install sysbench
+  ansible.builtin.apt:
+    name: sysbench
+    state: present
